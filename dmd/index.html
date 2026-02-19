@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flipper — DMD</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        background: #000;
+        color: #f00;
+        font-family: "Courier New", monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+      .dmd {
+        font-size: 2rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.2em;
+        text-shadow: 0 0 10px currentColor;
+      }
+      .status { margin-top: 1rem; font-size: 0.75rem; color: #333; }
+    </style>
+  </head>
+  <body>
+    <div class="dmd" id="message">READY</div>
+    <div class="dmd" id="score">0</div>
+    <div class="status" id="status">Connexion…</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
