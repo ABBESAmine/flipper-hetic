@@ -1,5 +1,8 @@
 ## Conventions équipe
 
+### Langue
+- Tout le projet est en français : code (commentaires, noms de variables/fonctions si possible), messages de commit, documentation, PR.
+
 ### Organisation GitHub (repo central + forks)
 - Un repo central (upstream) sert de référence du projet.
 - Chaque membre travaille sur son fork personnel du repo central.
