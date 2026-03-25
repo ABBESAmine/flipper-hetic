@@ -1,40 +1,54 @@
 name: CI
 
 on:
+  push:
+    branches: ["**"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  install-and-build:
+    name: Install & build (${{ matrix.app }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - dir: server
-            command: "node --check src/index.js"
-          - dir: playfield
-            command: "npm run build"
-          - dir: backglass
-            command: "npm run build"
-          - dir: dmd
-            command: "npm run build"
+        app:
+          - server
+          - playfield
+          - backglass
+          - dmd
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            playfield/package-lock.json
+            backglass/package-lock.json
+            dmd/package-lock.json
 
       - name: Install dependencies
-        working-directory: ${{ matrix.dir }}
         run: npm ci
 
-      - name: Run checks / build
-        working-directory: ${{ matrix.dir }}
-        run: ${{ matrix.command }}
+      - name: Build (Vite apps)
+        if: matrix.app != 'server'
+        run: npm run build
 
+      - name: Syntax check (server)
+        if: matrix.app == 'server'
+        run: node --check src/index.js
