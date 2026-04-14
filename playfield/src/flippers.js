@@ -62,25 +62,45 @@ function createOneFlipper(scene, world, side) {
   return { mesh, body, restAngle, activeAngle, currentAngle: restAngle, active: false };
 }
 
-function applyFlipperAngle(flipper, dt) {
+/**
+ * Pre-step : ne PAS teleporter le quaternion. On donne uniquement une
+ * angularVelocity a Cannon-es pour qu'il balaye la rotation sur chaque
+ * sous-step et detecte correctement les collisions avec la bille.
+ */
+function preStepFlipper(flipper) {
   const target = flipper.active ? flipper.activeAngle : flipper.restAngle;
-  const prev = flipper.currentAngle;
+  const diff = target - flipper.currentAngle;
 
-  // Interpolation vers la cible au lieu d'un snap instantane.
-  // Cannon-es voit le balayage et repousse la bille.
-  const diff = target - prev;
-  const maxStep = FLIPPER_SPEED * dt;
-  const step = Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
-  flipper.currentAngle = prev + step;
+  if (Math.abs(diff) < 0.001) {
+    flipper.body.angularVelocity.set(0, 0, 0);
+    return;
+  }
 
-  // Quaternion depuis l'angle autour de Y.
-  const q = new CANNON.Quaternion();
-  q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), flipper.currentAngle);
-  flipper.body.quaternion.copy(q);
+  flipper.body.angularVelocity.set(0, Math.sign(diff) * FLIPPER_SPEED, 0);
+}
 
-  // Vitesse angulaire pour que Cannon-es calcule la reponse de collision.
-  const angVel = dt > 0 ? step / dt : 0;
-  flipper.body.angularVelocity.set(0, angVel, 0);
+/**
+ * Post-step : lire le quaternion integre par Cannon-es, en extraire
+ * l'angle Y et le clamper dans [restAngle, activeAngle] pour eviter
+ * tout depassement.
+ */
+function postStepFlipper(flipper) {
+  const q = flipper.body.quaternion;
+  // Pour une rotation pure autour de Y : angle = 2 * atan2(q.y, q.w)
+  let angle = 2 * Math.atan2(q.y, q.w);
+
+  const minAngle = Math.min(flipper.restAngle, flipper.activeAngle);
+  const maxAngle = Math.max(flipper.restAngle, flipper.activeAngle);
+  const clamped = Math.max(minAngle, Math.min(maxAngle, angle));
+
+  if (clamped !== angle) {
+    const cq = new CANNON.Quaternion();
+    cq.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), clamped);
+    flipper.body.quaternion.copy(cq);
+    flipper.body.angularVelocity.set(0, 0, 0);
+  }
+
+  flipper.currentAngle = clamped;
 }
 
 // ── API publique ──────────────────────────────────────
@@ -100,9 +120,12 @@ export function createFlippers(scene, world) {
     }),
   );
 
-  // Position initiale au repos.
-  applyFlipperAngle(left, 1);
-  applyFlipperAngle(right, 1);
+  // Position initiale au repos (snap direct pour l'init, pas de sweep).
+  for (const f of [left, right]) {
+    const q = new CANNON.Quaternion();
+    q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), f.restAngle);
+    f.body.quaternion.copy(q);
+  }
 
   return { left, right };
 }
@@ -115,10 +138,19 @@ export function setFlipperActive(flippers, side, active) {
 }
 
 /**
- * Met a jour les quaternions des bodies kinematiques.
+ * Pre-step : definir les angularVelocity des flippers.
  * A appeler chaque frame AVANT world.step().
  */
-export function updateFlippers(flippers, dt) {
-  applyFlipperAngle(flippers.left, dt);
-  applyFlipperAngle(flippers.right, dt);
+export function updateFlippers(flippers) {
+  preStepFlipper(flippers.left);
+  preStepFlipper(flippers.right);
+}
+
+/**
+ * Post-step : clamper les angles apres integration par Cannon-es.
+ * A appeler chaque frame APRES world.step().
+ */
+export function postStepFlippers(flippers) {
+  postStepFlipper(flippers.left);
+  postStepFlipper(flippers.right);
 }

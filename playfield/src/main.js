@@ -20,7 +20,7 @@ import {
 } from "./physics.js";
 import { createBall, launchBall, resetBall, clampBall } from "./ball.js";
 import { initNetwork, emitStartGame, emitLaunchBall, emitFlipperLeftDown, emitFlipperLeftUp, emitFlipperRightDown, emitFlipperRightUp, gameState } from "./network.js";
-import { createFlippers, setFlipperActive, updateFlippers } from "./flippers.js";
+import { createFlippers, setFlipperActive, updateFlippers, postStepFlippers } from "./flippers.js";
 import { createBumpers } from "./bumpers.js";
 import { setupCollisionListeners, checkDrain, resetDrainFlag } from "./collisions.js";
 
@@ -230,8 +230,9 @@ function animate() {
   const delta = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
 
-  updateFlippers(flippers, delta);
+  updateFlippers(flippers);
   world.step(FIXED_TIME_STEP, delta, MAX_SUB_STEPS);
+  postStepFlippers(flippers);
   clampBall(ball);
 
   // Verifier si la bille est dans le drain apres le step physique.

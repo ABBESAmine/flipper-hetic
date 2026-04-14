@@ -48,7 +48,8 @@ export const BUMPER_POSITIONS = [
 ];
 
 // Drain — seuil Z au-dela duquel la bille est consideree perdue
-export const DRAIN_Z_THRESHOLD = TABLE_DEPTH / 2 + 1.5;
+// Juste apres le mur du bas (epaisseur WALL_THICKNESS) + marge pour le rayon bille.
+export const DRAIN_Z_THRESHOLD = TABLE_DEPTH / 2 + WALL_THICKNESS + 0.3;
 
 // Flippers — vitesse de rotation (rad/s)
 export const FLIPPER_SPEED = 15;
