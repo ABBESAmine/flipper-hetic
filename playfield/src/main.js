@@ -124,15 +124,131 @@ function addStaticBoxVisual(width, height, depth, x, y, z, type = "wall", materi
   syncPairs.push({ mesh, body });
 }
 
+function addStaticAngledBoxVisual({
+  width,
+  height,
+  depth,
+  x,
+  y,
+  z,
+  angleY,
+  type = "wall",
+  material = wallMat,
+  physicsMaterial = "static",
+}) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
+  mesh.position.set(x, y, z);
+  mesh.rotation.y = angleY;
+  scene.add(mesh);
+
+  const body = createStaticBoxBody(world, {
+    width,
+    height,
+    depth,
+    position: { x, y, z },
+    material: physicsMaterial,
+    type,
+  });
+  const q = new CANNON.Quaternion();
+  q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), angleY);
+  body.quaternion.copy(q);
+
+  syncPairs.push({ mesh, body });
+}
+
+
 addStaticBoxVisual(TABLE_WIDTH, TABLE_THICKNESS, TABLE_DEPTH, 0, -TABLE_THICKNESS / 2, 0, "table", tableMat, "table");
 addStaticBoxVisual(WALL_THICKNESS, WALL_HEIGHT, TABLE_DEPTH, -TABLE_WIDTH / 2 - WALL_THICKNESS / 2, WALL_HEIGHT / 2, 0);
 addStaticBoxVisual(WALL_THICKNESS, WALL_HEIGHT, TABLE_DEPTH, TABLE_WIDTH / 2 + WALL_THICKNESS / 2, WALL_HEIGHT / 2, 0);
 addStaticBoxVisual(TABLE_WIDTH + WALL_THICKNESS * 2, WALL_HEIGHT, WALL_THICKNESS, 0, WALL_HEIGHT / 2, -TABLE_DEPTH / 2 - WALL_THICKNESS / 2);
+// Retenue invisible au-dessus des murs (evite les sorties hors plateau).
+addStaticBoxVisual(TABLE_WIDTH + 0.4, 0.16, 0.16, 0, 1.02, -TABLE_DEPTH / 2 + 0.05, "wall", new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }), "static");
+addStaticBoxVisual(TABLE_WIDTH + 0.4, 0.16, 0.16, 0, 1.02, TABLE_DEPTH / 2 - 0.05, "wall", new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }), "static");
+addStaticBoxVisual(0.16, 0.16, TABLE_DEPTH + 0.4, -TABLE_WIDTH / 2 + 0.05, 1.02, 0, "wall", new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }), "static");
+addStaticBoxVisual(0.16, 0.16, TABLE_DEPTH + 0.4, TABLE_WIDTH / 2 - 0.05, 1.02, 0, "wall", new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }), "static");
+
+// Angles "arrondis" en haut (chamfreins diagonaux), comme sur le schema.
+addStaticAngledBoxVisual({
+  width: 3.0,
+  height: WALL_HEIGHT,
+  depth: WALL_THICKNESS,
+  x: -TABLE_WIDTH / 2 + 1.2,
+  y: WALL_HEIGHT / 2,
+  z: -TABLE_DEPTH / 2 + 1.05,
+  angleY: 0.52,
+});
+addStaticAngledBoxVisual({
+  width: 3.0,
+  height: WALL_HEIGHT,
+  depth: WALL_THICKNESS,
+  x: TABLE_WIDTH / 2 - 1.2,
+  y: WALL_HEIGHT / 2,
+  z: -TABLE_DEPTH / 2 + 1.05,
+  angleY: -0.52,
+});
 
 const bottomWallWidth = (TABLE_WIDTH - DRAIN_OPENING_WIDTH) / 2;
 const bottomZ = TABLE_DEPTH / 2 + WALL_THICKNESS / 2;
 addStaticBoxVisual(bottomWallWidth, WALL_HEIGHT, WALL_THICKNESS, -(DRAIN_OPENING_WIDTH / 2 + bottomWallWidth / 2), WALL_HEIGHT / 2, bottomZ);
 addStaticBoxVisual(bottomWallWidth, WALL_HEIGHT, WALL_THICKNESS, DRAIN_OPENING_WIDTH / 2 + bottomWallWidth / 2, WALL_HEIGHT / 2, bottomZ);
+
+// Tunnel droit (couloir de lancement) du haut vers le bas du playfield.
+addStaticBoxVisual(
+  WALL_THICKNESS,
+  WALL_HEIGHT,
+  11.0,
+  TABLE_WIDTH / 2 - 1.35,
+  WALL_HEIGHT / 2,
+  3.0,
+);
+// Butee basse du tunnel pour eviter le trou vers l'exterieur.
+addStaticBoxVisual(
+  1.2,
+  WALL_HEIGHT,
+  WALL_THICKNESS,
+  TABLE_WIDTH / 2 - 0.6,
+  WALL_HEIGHT / 2,
+  TABLE_DEPTH / 2 + WALL_THICKNESS / 2,
+);
+
+// Fausse vitre : couvre l'integralite du flipper (largeur + longueur).
+addStaticBoxVisual(
+  TABLE_WIDTH - 0.3,
+  0.04,
+  TABLE_DEPTH - 0.3,
+  0,
+  1.95,
+  0,
+  "glass",
+  new THREE.MeshStandardMaterial({
+    color: 0xaecbff,
+    transparent: true,
+    opacity: 0.14,
+    metalness: 0.1,
+    roughness: 0.2,
+  }),
+  "table",
+);
+
+// Guides anti-blocage au-dessus des flippers (orientation vers le bas/centre).
+addStaticAngledBoxVisual({
+  width: 4.8,
+  height: WALL_HEIGHT,
+  depth: 0.32,
+  x: -3.22,
+  y: WALL_HEIGHT / 2,
+  z: TABLE_DEPTH / 2 - 2.0,
+  angleY: -0.46,
+});
+addStaticAngledBoxVisual({
+  width: 2.25,
+  height: WALL_HEIGHT,
+  depth: 0.32,
+  x: 2.28,
+  y: WALL_HEIGHT / 2,
+  z: TABLE_DEPTH / 2 - 2.0,
+  angleY: 0.46,
+});
 
 const bumpers = createBumpers(scene, world);
 syncPairs.push(...bumpers);
@@ -160,7 +276,7 @@ function tryLaunch() {
 
   emitLaunchBall(socket);
   ball.body.wakeUp();
-  ball.body.applyImpulse(new CANNON.Vec3(0, 0.35, LAUNCH_IMPULSE_Z), ball.body.position);
+  ball.body.applyImpulse(new CANNON.Vec3(0, 0.08, LAUNCH_IMPULSE_Z), ball.body.position);
 }
 
 window.addEventListener("keydown", (event) => {
@@ -223,6 +339,20 @@ function animate() {
   const lost = detectDrain(ball.body, drainWatcher);
   if (lost && gameState.status === "playing") {
     emitCollision(socket, "drain");
+    emitBallLost(socket);
+    pendingRespawn = true;
+    ball.body.velocity.set(0, 0, 0);
+    ball.body.angularVelocity.set(0, 0, 0);
+    ball.body.position.set(0, -4, 0);
+  }
+
+  // Garde-fou: si la bille sort des limites du plateau, compter une perte de bille.
+  const outOfBounds =
+    Math.abs(ball.body.position.x) > TABLE_WIDTH * 0.75 ||
+    ball.body.position.z < -TABLE_DEPTH * 0.65 ||
+    ball.body.position.z > TABLE_DEPTH * 0.62;
+  if (outOfBounds && gameState.status === "playing" && drainWatcher.canLoseBall) {
+    drainWatcher.canLoseBall = false;
     emitBallLost(socket);
     pendingRespawn = true;
     ball.body.velocity.set(0, 0, 0);

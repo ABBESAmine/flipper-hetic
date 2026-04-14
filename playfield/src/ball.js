@@ -34,8 +34,8 @@ export function createBall(scene, world) {
 
   world.addContactMaterial(
     new CANNON.ContactMaterial(MATERIALS.ball, MATERIALS.static, {
-      friction: 0.22,
-      restitution: 0.35,
+      friction: 0.28,
+      restitution: 0.04,
     }),
   );
   world.addContactMaterial(

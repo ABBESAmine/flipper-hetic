@@ -28,10 +28,10 @@ export const PLUNGER_SPAWN_Z = TABLE_DEPTH / 2 - 1;
 // Bille
 export const BALL_RADIUS = 0.17;
 export const BALL_MASS = 0.1;
-export const BALL_LINEAR_DAMPING = 0.015;
+export const BALL_LINEAR_DAMPING = 0.007;
 export const BALL_ANGULAR_DAMPING = 0.02;
 export const LAUNCH_IMPULSE_Z = -9.5;
-export const LAUNCH_MAX_SPEED = 12;
+export const LAUNCH_MAX_SPEED = 18;
 
 // Drain / perte de bille (zone de detection dans l'ouverture)
 export const DRAIN_MIN_Z = TABLE_DEPTH / 2 - 0.4;
@@ -41,11 +41,11 @@ export const DRAIN_MAX_X = DRAIN_OPENING_WIDTH / 2 + 0.15;
 export const DRAIN_MAX_Y = 0.2;
 
 // Flippers
-export const FLIPPER_LENGTH = 1.6;
+export const FLIPPER_LENGTH = 1.45;
 export const FLIPPER_WIDTH = 0.28;
 export const FLIPPER_HEIGHT = 0.18;
 export const FLIPPER_REST_ANGLE = 0.9;
-export const FLIPPER_PIVOT_X = 1.2;
+export const FLIPPER_PIVOT_X = 1.35;
 export const FLIPPER_PIVOT_Z = TABLE_DEPTH / 2 - 1.4;
 export const FLIPPER_PIVOT_Y = FLIPPER_HEIGHT / 2;
 export const FLIPPER_SPEED = 18;
