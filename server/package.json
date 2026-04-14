@@ -7,13 +7,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "server:dev": "node --watch src/index.js",
-    "test:client": "node scripts/test-client.mjs"
+    "server:dev": "node --watch src/index.js"
   },
   "dependencies": {
     "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
-    "socket.io-client": "^4.8.3"
   }
 }

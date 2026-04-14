@@ -22,16 +22,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         working-directory: ${{ matrix.dir }}
-        run: npm install
+        run: npm ci
 
       - name: Run checks / build
         working-directory: ${{ matrix.dir }}
@@ -53,24 +54,25 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
         working-directory: ${{ matrix.dir }}
-        run: npm install
+        run: npm ci
 
       - name: Build
         working-directory: ${{ matrix.dir }}
         run: npm run build
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.dir }}-dist
           path: ${{ matrix.dir }}/${{ matrix.dist }}
+
