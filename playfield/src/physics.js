@@ -53,7 +53,7 @@ export function createPhysicsWorld() {
  * (pas les half-extents). `position` est un objet { x, y, z } (compatible
  * avec THREE.Vector3).
  */
-export function createStaticBoxBody(world, { width, height, depth, position, material, type = "wall" }) {
+export function createStaticBoxBody(world, { width, height, depth, position, material, type = "wall", rotationY = 0 }) {
   const halfExtents = new CANNON.Vec3(width / 2, height / 2, depth / 2);
   const shape = new CANNON.Box(halfExtents);
   const body = new CANNON.Body({
@@ -62,6 +62,9 @@ export function createStaticBoxBody(world, { width, height, depth, position, mat
     material: MATERIALS[material] || MATERIALS.static,
   });
   body.position.set(position.x, position.y, position.z);
+  if (rotationY !== 0) {
+    body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotationY);
+  }
   body.userData = { type };
   world.addBody(body);
   return body;
