@@ -22,6 +22,7 @@ import { createBall, launchBall, resetBall, clampBall } from "./ball.js";
 import { initNetwork, emitStartGame, emitLaunchBall, emitFlipperLeftDown, emitFlipperLeftUp, emitFlipperRightDown, emitFlipperRightUp, gameState } from "./network.js";
 import { createFlippers, setFlipperActive, updateFlippers, postStepFlippers } from "./flippers.js";
 import { createBumpers } from "./bumpers.js";
+import { createSlingshots } from "./slingshots.js";
 import { setupCollisionListeners, checkDrain, resetDrainFlag } from "./collisions.js";
 
 // ── Scene ──────────────────────────────────────────────
@@ -152,9 +153,11 @@ syncPairs.push(ball);
 const flippers = createFlippers(scene, world);
 syncPairs.push(flippers.left, flippers.right);
 
+// ── Slingshots ────────────────────────────────────────
+syncPairs.push(...createSlingshots(scene, world));
+
 // ── Bumpers ─────────────────────────────────────────
-const bumperPairs = createBumpers(scene, world);
-syncPairs.push(...bumperPairs);
+syncPairs.push(...createBumpers(scene, world));
 
 // ── Reseau Socket.io ──────────────────────────────────
 const socket = initNetwork({
@@ -182,7 +185,7 @@ window.addEventListener("keydown", (e) => {
     }
   }
 
-  if (e.code === "KeyS") {
+  if (e.code === "KeyS" || e.code === "Enter") {
     emitStartGame(socket);
   }
 

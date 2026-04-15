@@ -73,26 +73,34 @@ export function clampBall({ body }) {
 let launched = false;
 
 /**
- * Replace la bille au spawn plunger et remet ses vitesses a zero.
+ * Replace la bille au spawn plunger, remet ses vitesses a zero et la fige
+ * (body STATIC) jusqu'au prochain launchBall().
  * Reutilisable par l'etape 7 (plunger) et l'etape 10 (perte de bille).
  */
 export function resetBall({ body }) {
   body.position.set(PLUNGER_SPAWN_X, PLUNGER_SPAWN_Y, PLUNGER_SPAWN_Z);
   body.velocity.set(0, 0, 0);
   body.angularVelocity.set(0, 0, 0);
+  body.force.set(0, 0, 0);
+  body.torque.set(0, 0, 0);
   body.quaternion.set(0, 0, 0, 1);
+  body.type = CANNON.Body.STATIC;
+  body.updateMassProperties();
   body.wakeUp();
   launched = false;
 }
 
 /**
  * Lance la bille depuis le spawn plunger.
- * Applique une impulsion en Z negatif (vers le haut du plateau).
+ * Debloque le body (DYNAMIC) et applique une impulsion en Z negatif (vers le haut).
  * Refuse le lancement si la bille a deja ete lancee (anti double-lancement).
  * Retourne true si le lancement a eu lieu, false sinon.
  */
 export function launchBall({ body }) {
   if (launched) return false;
+  body.type = CANNON.Body.DYNAMIC;
+  body.updateMassProperties();
+  body.wakeUp();
   body.applyImpulse(new CANNON.Vec3(0, 0, -PLUNGER_IMPULSE_FORCE));
   launched = true;
   return true;

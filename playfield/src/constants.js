@@ -20,10 +20,10 @@ export const WALL_THICKNESS = 0.3;
 // Drain (ouverture entre les futurs flippers)
 export const DRAIN_OPENING_WIDTH = 2.5;
 
-// Spawn bille (centre bas du plateau, au-dessus du drain)
+// Spawn bille (centre, juste au-dessus du drain)
 export const PLUNGER_SPAWN_X = 0;
 export const PLUNGER_SPAWN_Y = 0.26;
-export const PLUNGER_SPAWN_Z = TABLE_DEPTH / 2 - 1.5;
+export const PLUNGER_SPAWN_Z = TABLE_DEPTH / 2 - 0.5;
 
 // Plunger — force d'impulsion (Z negatif = vers le haut du plateau)
 export const PLUNGER_IMPULSE_FORCE = 18;
@@ -33,18 +33,22 @@ export const FLIPPER_LENGTH = 2.0;
 export const FLIPPER_WIDTH = 0.4;
 export const FLIPPER_HEIGHT = 0.3;
 export const FLIPPER_REST_ANGLE = 0.5;   // radians (~28°), battes au repos vers le drain
-export const FLIPPER_PIVOT_X = DRAIN_OPENING_WIDTH / 2 + 0.2; // distance du centre (±)
+export const FLIPPER_PIVOT_X = DRAIN_OPENING_WIDTH / 2 + 1.25; // distance du centre (±), laisse un acces au drain au repos
 export const FLIPPER_PIVOT_Z = TABLE_DEPTH / 2 - 1.5;
 export const FLIPPER_PIVOT_Y = FLIPPER_HEIGHT / 2 + 0.05;
+
+// Slingshots — murs inclines qui ferment le corridor lateral au-dessus des flippers
+export const SLINGSHOT_DEPTH = 0.25;
+export const SLINGSHOT_TOP_OFFSET = 2.4; // distance Z entre l'extremite haute et le pivot flipper
 
 // Bumpers
 export const BUMPER_RADIUS = 0.5;
 export const BUMPER_HEIGHT = 0.6;
 export const BUMPER_REPULSE_FORCE = 3;
 export const BUMPER_POSITIONS = [
-  { x: -2, z: -2 },
-  { x: 2, z: -4 },
-  { x: 0, z: -6 },
+  { x: -3.1, z: -3.4 },
+  { x: 2.6, z: -6.8 },
+  { x: -0.4, z: -1.1 },
 ];
 
 // Drain — seuil Z au-dela duquel la bille est consideree perdue
