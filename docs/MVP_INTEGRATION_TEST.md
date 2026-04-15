@@ -4,7 +4,13 @@ Ce document valide le flux complet serveur + playfield + backglass + DMD.
 
 ## 1) Lancement des 4 applications
 
-Depuis la racine du repo, ouvrir 4 terminaux :
+Depuis la racine du repo, commande unique :
+
+```bash
+npm run dev:all
+```
+
+Alternative (si besoin de logs separes), ouvrir 4 terminaux :
 
 ```bash
 cd server && npm run dev
