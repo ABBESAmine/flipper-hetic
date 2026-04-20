@@ -51,8 +51,15 @@ import {
 // Use cases
 import { createCollisionHandler } from "./usecases/collisionHandler.js";
 
+// Actuators
+import { createActuators } from "./adapters/actuators.js";
+
 // Input
 import { createGameInputController, bindKeyboardInput } from "./adapters/input.js";
+
+// ── Actionneurs ───────────────────────────────────────
+const actuators = createActuators();
+window.actuators = actuators; // Expose globalement pour le debug console
 
 // ── Scene + Renderer ──────────────────────────────────
 const { scene, camera, renderer } = createScene();
@@ -155,6 +162,7 @@ const socket = initNetwork({
     collisionHandler.resetCollisionCooldowns();
     setFlipperActive(flipperBodies, "left", false);
     setFlipperActive(flipperBodies, "right", false);
+    actuators.onGameStart();
     console.log("[main] game started — bille au spawn");
   },
   onGameOver(data) {
@@ -164,8 +172,15 @@ const socket = initNetwork({
 
 // ── Collisions (use case pur + adapter Cannon-es) ─────
 const collisionHandler = createCollisionHandler({
-  onCollision: (type) => emitCollision(socket, type),
-  onBallLost: () => emitBallLost(socket),
+  onCollision: (type) => {
+    emitCollision(socket, type);
+    if (type === "bumper") actuators.onBumperHit();
+    else if (type === "slingshot") actuators.onSlingshotHit();
+  },
+  onBallLost: () => {
+    emitBallLost(socket);
+    actuators.onBallLost();
+  },
 });
 attachCollisionListener(ballBody, collisionHandler);
 
@@ -182,6 +197,7 @@ const inputController = createGameInputController({
   onLeftFlipperDown() {
     setFlipperActive(flipperBodies, "left", true);
     emitFlipperLeftDown(socket);
+    actuators.onFlipperFire("left");
   },
   onLeftFlipperUp() {
     setFlipperActive(flipperBodies, "left", false);
@@ -190,6 +206,7 @@ const inputController = createGameInputController({
   onRightFlipperDown() {
     setFlipperActive(flipperBodies, "right", true);
     emitFlipperRightDown(socket);
+    actuators.onFlipperFire("right");
   },
   onRightFlipperUp() {
     setFlipperActive(flipperBodies, "right", false);
