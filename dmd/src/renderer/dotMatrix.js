@@ -19,7 +19,7 @@ const TEXT_BG_OPACITY = 0.65;
 const VISIBLE_TEXT_WIDTH = DOT_COLS - TEXT_MARGIN * 2;
 const SCROLL_STEP_MS = 50;
 const SCROLL_PAUSE_MS = 2500;
-const GAME_OVER_PAUSE_MS = 5000;
+const GAME_OVER_PAUSE_MS = 7000;
 const TRANSITION_SPACES = 4;
 
 /**
@@ -82,9 +82,12 @@ export function createDotMatrixRenderer(canvas) {
     render();
   };
   img.onerror = () => {
-    // silently ignore
+    const normalizedBaseUrl = (import.meta?.env?.BASE_URL ?? "/").replace(/\/$/, "");
+    const assetPath = `${normalizedBaseUrl}/assets/img/BB-Pixel-DMD.jpg`;
+    console.warn(`[dmd] failed to load image from ${assetPath}`);
   };
-  img.src = "/img/BB-Pixel-DMD.jpg";
+  const normalizedBaseUrl = (import.meta?.env?.BASE_URL ?? "/").replace(/\/$/, "");
+  img.src = `${normalizedBaseUrl}/assets/img/BB-Pixel-DMD.jpg`;
 
   function normalizeMessage(input) {
     const src = typeof input === "string" ? input : "";
@@ -269,12 +272,10 @@ export function createDotMatrixRenderer(canvas) {
     ctx.globalAlpha = 1;
 
     if (textWidth > 0) {
-      const textRectX = Math.max(0, textX * dotPitchX - TEXT_BG_PADDING * dotPitchX);
       const textRectY = Math.max(0, TEXT_LINE_Y * dotPitchY - TEXT_BG_PADDING * dotPitchY);
-      const textRectW = Math.min(canvas.width - textRectX, (textWidth + TEXT_BG_PADDING * 2) * dotPitchX);
       const textRectH = Math.min(canvas.height - textRectY, (7 + TEXT_BG_PADDING * 2) * dotPitchY);
       ctx.fillStyle = `rgba(0, 0, 0, ${TEXT_BG_OPACITY})`;
-      ctx.fillRect(textRectX, textRectY, textRectW, textRectH);
+      ctx.fillRect(0, textRectY, canvas.width, textRectH);
     }
 
     for (let y = 0; y < DOT_ROWS; y += 1) {
@@ -339,24 +340,18 @@ export function createDotMatrixRenderer(canvas) {
       const normalized = normalizeMessage(text);
       dmdState.message = normalized;
 
-      // If we're idle, schedule the normal transition so the message scrolls in.
       if (dmdState.status === "idle") {
         scheduleTextTransition(dmdState.message);
         render();
         return;
       }
 
-      // If the machine is in game_over, show the DMD message immediately and
-      // keep it visible for the GAME_OVER_PAUSE_MS so the client matches server
-      // behavior even if network ordering varies.
       if (dmdState.status === "game_over") {
-        resetTextScroll(dmdState.message, { pauseMs: GAME_OVER_PAUSE_MS });
+        scheduleTextTransition(dmdState.message);
         render();
         return;
       }
 
-      // For other statuses (playing), just update the stored message so it can
-      // be used when returning to idle or for transitions triggered by status.
       render();
     },
 
@@ -384,24 +379,32 @@ export function createDotMatrixRenderer(canvas) {
       clearGameOverTimeout();
       const currentText = getTextForStatus(currentStatus);
       dmdState.status = nextStatus;
+      if (nextStatus === "playing" && currentStatus !== "playing") {
+        dmdState.score = 0;
+      }
       const nextText = getTextForStatus(nextStatus);
 
-      // Special handling for game_over: show centered static "GAME OVER!" for
-      // GAME_OVER_PAUSE_MS, then start a leftward transition to PRESS START.
       if (nextStatus === "game_over") {
-        resetTextScroll(nextText, { pauseMs: GAME_OVER_PAUSE_MS });
+        const currentWidth = measureTextWidth(currentText);
+        const spacerWidth = measureTextWidth(" ".repeat(TRANSITION_SPACES));
+        const nextWidth = measureTextWidth(nextText);
+        const startX = scrollState.active
+          ? scrollState.offsetX
+          : Math.floor((DOT_COLS - currentWidth) / 2);
+        const targetX = Math.floor((DOT_COLS - nextWidth) / 2) - (currentWidth + spacerWidth);
+        const transitionTime = Math.max(0, startX - targetX) * SCROLL_STEP_MS;
+
+        scheduleTextTransition(nextText, currentText);
         gameOverTimeoutId = setTimeout(() => {
-          // If status changed in the meantime, abort.
           if (dmdState.status !== "game_over") return;
-          // Start the leftward scroll transition from GAME OVER! -> PRESS START
-          scheduleTextTransition(getTextForStatus("idle"), nextText);
-        }, GAME_OVER_PAUSE_MS);
+          dmdState.status = "idle";
+          scheduleTextTransition("PRESS START", nextText);
+        }, GAME_OVER_PAUSE_MS + transitionTime);
         return;
       }
 
-      // When returning to idle we want the PRESS START to be static.
       if (nextStatus === "idle") {
-        resetTextScroll(nextText);
+        scheduleTextTransition(nextText, currentText);
         return;
       }
 
