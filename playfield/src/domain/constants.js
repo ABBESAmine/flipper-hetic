@@ -29,9 +29,9 @@ export const TUNNEL_WALL_X = TABLE_WIDTH / 2 - TUNNEL_WIDTH - WALL_THICKNESS / 2
 export const TUNNEL_WALL_Z = TABLE_DEPTH / 2 - TUNNEL_LENGTH / 2;
 
 // Spawn bille (au centre du tunnel, juste devant le mur du bas)
-export const PLUNGER_SPAWN_X = TABLE_WIDTH / 2 - TUNNEL_WIDTH / 2;
+export const PLUNGER_SPAWN_X = TABLE_WIDTH / 2 - TUNNEL_WIDTH / 2 + 0.5;
 export const PLUNGER_SPAWN_Y = 0.26;
-export const PLUNGER_SPAWN_Z = TABLE_DEPTH / 2 - 0.5;
+export const PLUNGER_SPAWN_Z = TABLE_DEPTH / 2 + 0.5;
 
 // Plunger — force d'impulsion (Z negatif = vers le haut du plateau)
 export const PLUNGER_IMPULSE_FORCE = 38;
@@ -42,8 +42,10 @@ export const FLIPPER_WIDTH = 0.4;
 export const FLIPPER_HEIGHT = 0.3;
 export const FLIPPER_REST_ANGLE = 0.5;   // radians (~28°), battes au repos vers le drain
 export const FLIPPER_PIVOT_X = DRAIN_OPENING_WIDTH / 2 + 1.25; // distance du centre (±), laisse un acces au drain au repos
-export const FLIPPER_PIVOT_Z = TABLE_DEPTH / 2 - 1.5;
-export const FLIPPER_PIVOT_Y = FLIPPER_HEIGHT / 2 + 0.05;
+export const FLIPPER_PIVOT_Z = TABLE_DEPTH / 2 + 0.75;
+export const FLIPPER_PIVOT_Y = -0.1;
+export const FLIPPER_ROT_X = 0.2792526803190927;  // radians (~16°), inclinaison des battes sur l'axe X
+export const FLIPPER_ROT_Z = 0.017453292519943295;  // radians (~1°), inclinaison des battes sur l'axe Z
 
 // Slingshots — murs inclines qui ferment le corridor lateral au-dessus des flippers
 export const SLINGSHOT_DEPTH = 0.25;
@@ -63,9 +65,9 @@ export const BUMPER_POSITIONS = [
   { x: -0.4, z: -1.1 },
 ];
 
-// Drain — seuil Z au-dela duquel la bille est consideree perdue
-// Juste apres le mur du bas (epaisseur WALL_THICKNESS) + marge pour le rayon bille.
-export const DRAIN_Z_THRESHOLD = TABLE_DEPTH / 2 + WALL_THICKNESS + 0.3;
+// Drain — seuil Z au-dela duquel la bille est consideree perdue.
+// Doit être en dessous des flippers (FLIPPER_PIVOT_Z = 9.75) avec marge suffisante.
+export const DRAIN_Z_THRESHOLD = TABLE_DEPTH / 2 + 2.5;  // = 11.5
 
 // Flippers — vitesse de rotation (rad/s)
 export const FLIPPER_SPEED = 15;

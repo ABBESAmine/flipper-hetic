@@ -1,6 +1,3 @@
-/**
- * Rapier — Body de la bille + launch / reset / clamp.
- */
 import {
   BALL_RADIUS,
   PLUNGER_SPAWN_X,
@@ -64,8 +61,7 @@ export function resetBallBody(body) {
   body.rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
   body.rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
   body.rb.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-  // Fige la bille en kinematic le temps du lancement
-  body.rb.setBodyType(2 /* KinematicPositionBased */, true);
+  body.rb.setBodyType(2 /* KinematicPositionBased */, true); // freeze until launch
   body.rb.wakeUp();
   body.userData.launched = false;
 }
@@ -73,18 +69,13 @@ export function resetBallBody(body) {
 export function launchBallBody(body) {
   if (body.userData.launched) return false;
   body.rb.setBodyType(0 /* Dynamic */, true);
-  // Force le recalcul des proprietes de masse a partir du collider :
-  // sans ca, la transition Kinematic -> Dynamic peut laisser le body sans masse
-  // et `applyImpulse` ne produit aucune velocite (impulse / 0 = NaN ignore).
+  // Kinematic→Dynamic can leave body massless; recompute prevents applyImpulse being a no-op.
   if (typeof body.rb.recomputeMassPropertiesFromColliders === "function") {
     body.rb.recomputeMassPropertiesFromColliders();
   }
   body.rb.wakeUp();
-  // setLinvel direct (independant de la masse) plutot qu'applyImpulse :
-  // garantit que la bille part meme si le recompute ci-dessus est ignore.
-  // Avec BALL_MASS = 1, applyImpulse(F) ~ setLinvel(F), donc PLUNGER_IMPULSE_FORCE
-  // garde sa magnitude historique.
-  body.rb.setLinvel({ x: 0, y: 0, z: -PLUNGER_IMPULSE_FORCE }, true);
+  // x: -2 curves ball from launch lane toward flipper zone on return (replaces a static guide rail)
+  body.rb.setLinvel({ x: -2, y: 0, z: -PLUNGER_IMPULSE_FORCE }, true);
   body.userData.launched = true;
   return true;
 }

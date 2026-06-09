@@ -1,6 +1,3 @@
-/**
- * Playfield — Composition root.
- */
 import { createScene } from "./adapters/renderer/scene.js";
 import {
   initRapier,
@@ -40,6 +37,7 @@ await initRapier();
 
 const audio = createAudioEngine(updateAudioHud);
 audio.startTheme(0.18);
+audio.setMuted(true, false);
 mountAudioControls(audio);
 const audioHud = document.getElementById("audio-hud");
 if (audioHud) audioHud.style.display = "none";
@@ -48,8 +46,9 @@ window.actuators = actuators;
 
 const { scene, camera, renderer, dirLight } = createScene();
 const world = createPhysicsWorld();
-const level = buildLevel({ scene, world });
+const level = await buildLevel({ scene, world });
 const levelGroup = groupLevelMeshes(scene, level.syncPairs);
+levelGroup.add(level.gltfModel);
 
 const viewRuntime = createPlayfieldViewRuntime({
   camera,
@@ -74,6 +73,7 @@ const readyDebug = () => {
     world,
     dirLight,
     audio,
+    level,
     onResetHighScore: () => {
       if (socket) {
         emitResetHighScore(socket);
