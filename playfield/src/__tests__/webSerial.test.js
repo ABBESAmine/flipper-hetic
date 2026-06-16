@@ -34,12 +34,29 @@ describe("decodeLine — protocole 2 boutons", () => {
   });
 });
 
+describe("decodeLine — boutons d'action (start / launch / debug)", () => {
+  it("ST -> start_game", () => {
+    expect(decodeLine("ST")).toBe("start");
+  });
+
+  it("LA -> launch_ball (plunger)", () => {
+    expect(decodeLine("LA")).toBe("launch");
+  });
+
+  it("DBG -> debugResetBall", () => {
+    expect(decodeLine("DBG")).toBe("debugResetBall");
+  });
+});
+
 describe("SERIAL_PROTOCOL — garde-fou de coherence", () => {
   const VALID_ACTIONS = new Set([
     "leftFlipperDown",
     "leftFlipperUp",
     "rightFlipperDown",
     "rightFlipperUp",
+    "start",
+    "launch",
+    "debugResetBall",
   ]);
 
   it("chaque code mappe une action acceptee par bindExternalInputSource", () => {
@@ -48,7 +65,7 @@ describe("SERIAL_PROTOCOL — garde-fou de coherence", () => {
     }
   });
 
-  it("couvre les deux flippers dans les deux sens (down/up)", () => {
+  it("couvre flippers + start + launch + debug", () => {
     const actions = new Set(Object.values(SERIAL_PROTOCOL));
     expect(actions).toEqual(VALID_ACTIONS);
   });

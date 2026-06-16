@@ -8,6 +8,9 @@ export const SERIAL_PROTOCOL = Object.freeze({
   RL: "leftFlipperUp",
   PR: "rightFlipperDown",
   RR: "rightFlipperUp",
+  ST: "start",
+  LA: "launch",
+  DBG: "debugResetBall",
 });
 
 /**
