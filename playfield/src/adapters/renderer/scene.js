@@ -2,6 +2,7 @@
  * Playfield — Scene Three.js, camera, lumieres, renderer.
  */
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import {
   MAX_RENDERER_PIXEL_RATIO,
   RENDERER_ANTIALIAS,
@@ -37,7 +38,14 @@ export function createScene() {
   renderer.setPixelRatio(effectivePixelRatio());
   document.body.style.margin = "0";
   document.body.style.overflow = "hidden";
+  document.body.style.background = "#000"; // bandes de letterbox 9:16
   document.body.appendChild(renderer.domElement);
+
+  // Environment map (éclairage image-based) : indispensable pour que les
+  // matériaux PBR métalliques des GLB ne rendent pas noir (un métal sans
+  // réflexion = noir). N'affecte pas le rendu émissif néon.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
   // Lumieres
   const ambientLight = new THREE.AmbientLight(

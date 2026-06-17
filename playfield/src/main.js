@@ -27,10 +27,13 @@ import { createAudioEngine } from "./adapters/audio.js";
 import { mountAudioControls, updateAudioHud } from "./adapters/audio-controls.js";
 import { createGameInputController, bindKeyboardInput, bindExternalInputSource } from "./adapters/input.js";
 import { createCabinetInputSource } from "./adapters/cabinetInput.js";
-import { buildLevel } from "./composition/buildLevel.js";
+import { buildRefLevel } from "./composition/buildRefLevel.js";
 import { groupLevelMeshes } from "./composition/levelGroup.js";
 import { startPlayfieldLoop } from "./composition/runGameLoop.js";
 import { createPlayfieldViewRuntime } from "./composition/playfieldViewRuntime.js";
+import { createFloorMesh } from "./adapters/renderer/floorMesh.js";
+import { createFloorGrid } from "./adapters/renderer/playfieldVisuals.js";
+import { PLAYFIELD_VIEW_DEFAULTS } from "./domain/viewConfig.js";
 await initRapier();
 
 const audio = createAudioEngine(updateAudioHud);
@@ -43,9 +46,21 @@ const actuators = createActuators(audio);
 
 const { scene, camera, renderer, dirLight } = createScene();
 const world = createPhysicsWorld();
-const level = await buildLevel({ scene, world });
+const level = await buildRefLevel({ scene, world });
 const levelGroup = groupLevelMeshes(scene, level.syncPairs);
-levelGroup.add(level.gltfModel);
+
+// Sol dégradé + grille néon, dimensionnés sur le cadre 9:16.
+const frameBounds = {
+  minX: PLAYFIELD_VIEW_DEFAULTS.frameMinX,
+  maxX: PLAYFIELD_VIEW_DEFAULTS.frameMaxX,
+  minZ: PLAYFIELD_VIEW_DEFAULTS.frameMinZ,
+  maxZ: PLAYFIELD_VIEW_DEFAULTS.frameMaxZ,
+};
+levelGroup.add(createFloorMesh({ ...frameBounds, y: 0 }));
+levelGroup.add(createFloorGrid({ ...frameBounds, y: 0.02 }));
+
+// Niveau néon (murs, slingshots, bumpers, posts) construit depuis refLayout.
+levelGroup.add(level.visualsGroup);
 
 const viewRuntime = createPlayfieldViewRuntime({
   camera,

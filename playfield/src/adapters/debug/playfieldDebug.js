@@ -1,8 +1,4 @@
 import {
-  GLB_SCALE, GLB_SCALE_X, GLB_ROTATION_X, GLB_ROTATION_Y, GLB_ROTATION_Z,
-  GLB_POSITION_X, GLB_POSITION_Y, GLB_POSITION_Z,
-} from '../renderer/modelLoader.js';
-import {
   FLIPPER_PIVOT_X, FLIPPER_PIVOT_Z, FLIPPER_PIVOT_Y, FLIPPER_REST_ANGLE,
   FLIPPER_ROT_X, FLIPPER_ROT_Z, FLIPPER_OFFSET_X,
   PLUNGER_SPAWN_X, PLUNGER_SPAWN_Y, PLUNGER_SPAWN_Z,
@@ -14,14 +10,6 @@ const DEG = Math.PI / 180;
 
 export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, world, onConfigChange, physicsRotateY, setPhysicsDebugVisible }) {
   const defaults = {
-    glbScale:  GLB_SCALE,
-    glbScaleX: GLB_SCALE_X,
-    glbRotX:   GLB_ROTATION_X,
-    glbRotY:   GLB_ROTATION_Y,
-    glbRotZ:   GLB_ROTATION_Z,
-    glbPosX:   GLB_POSITION_X,
-    glbPosY:   GLB_POSITION_Y,
-    glbPosZ:   GLB_POSITION_Z,
     pivotX:       FLIPPER_PIVOT_X,
     pivotY:       FLIPPER_PIVOT_Y,
     pivotZ:       FLIPPER_PIVOT_Z,
@@ -34,23 +22,14 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
     spawnZ:    PLUNGER_SPAWN_Z,
     gravityTilt: PLAYFIELD_VIEW_DEFAULTS.gravityTiltDeg,
     gravityMag:  PLAYFIELD_VIEW_DEFAULTS.gravityMagnitude,
-    worldRotX: 0,
-    worldRotY: 0,
-    worldRotZ: 0,
+    frameMinX:   PLAYFIELD_VIEW_DEFAULTS.frameMinX,
+    frameMaxX:   PLAYFIELD_VIEW_DEFAULTS.frameMaxX,
+    frameMinZ:   PLAYFIELD_VIEW_DEFAULTS.frameMinZ,
+    frameMaxZ:   PLAYFIELD_VIEW_DEFAULTS.frameMaxZ,
+    frameMargin: PLAYFIELD_VIEW_DEFAULTS.frameMargin,
   };
 
   const state = { ...defaults };
-
-  function applyGLB() {
-    if (!gltfModel) return;
-    gltfModel.scale.set(state.glbScaleX, state.glbScale, state.glbScale);
-    gltfModel.rotation.set(
-      (state.glbRotX + state.worldRotX) * DEG,
-      (state.glbRotY + state.worldRotY) * DEG,
-      (state.glbRotZ + state.worldRotZ) * DEG,
-    );
-    gltfModel.position.set(state.glbPosX, state.glbPosY, state.glbPosZ);
-  }
 
   function quatFromYaw(a) { const h = a / 2; return { x: 0, y: Math.sin(h), z: 0, w: Math.cos(h) }; }
   function quatFromAxis(ax, ay, az, a) { const h = a / 2, s = Math.sin(h); return { x: ax*s, y: ay*s, z: az*s, w: Math.cos(h) }; }
@@ -74,9 +53,14 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
     applyPhysicsGravity(world, state.gravityTilt, state.gravityMag);
   }
 
-  function applyWorldRot() {
-    applyGLB(); // inclut worldRotX/Y/Z dans la rotation du GLB directement
-    if (physicsRotateY) physicsRotateY(state.worldRotY);
+  function applyFrame() {
+    onConfigChange?.({
+      frameMinX:   state.frameMinX,
+      frameMaxX:   state.frameMaxX,
+      frameMinZ:   state.frameMinZ,
+      frameMaxZ:   state.frameMaxZ,
+      frameMargin: state.frameMargin,
+    });
   }
 
   function applyBall() {
@@ -108,19 +92,6 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
 
   const SECTIONS = [
     {
-      title: '▸ GLB Visual',
-      rows: [
-        { key: 'glbScale',  label: 'Scale (Y/Z)', min: 0.1,  max: 20,   step: 0.05, apply: applyGLB },
-        { key: 'glbScaleX', label: 'Scale X',     min: 0.1,  max: 20,   step: 0.05, apply: applyGLB },
-        { key: 'glbRotX',  label: 'Rotation X°', min: -180, max: 180,  step: 1,    apply: applyGLB },
-        { key: 'glbRotY',  label: 'Rotation Y°', min: -180, max: 180,  step: 1,    apply: applyGLB },
-        { key: 'glbRotZ',  label: 'Rotation Z°', min: -180, max: 180,  step: 1,    apply: applyGLB },
-        { key: 'glbPosX',  label: 'Position X',  min: -20,  max: 20,   step: 0.05, apply: applyGLB },
-        { key: 'glbPosY',  label: 'Position Y',  min: -20,  max: 20,   step: 0.05, apply: applyGLB },
-        { key: 'glbPosZ',  label: 'Position Z',  min: -20,  max: 20,   step: 0.05, apply: applyGLB },
-      ],
-    },
-    {
       title: '▸ Flippers',
       rows: [
         { key: 'pivotZ',      label: 'Pivot Z',       min: 0,    max: 18,   step: 0.05, apply: applyFlippers },
@@ -143,15 +114,17 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
       title: '▸ Gravity',
       rows: [
         { key: 'gravityTilt', label: 'Tilt (°)',    min: -45, max: 45, step: 0.5, apply: applyGravity },
-        { key: 'gravityMag',  label: 'Magnitude',   min: 0,   max: 40, step: 0.5, apply: applyGravity },
+        { key: 'gravityMag',  label: 'Magnitude',   min: 0,   max: 90, step: 0.5, apply: applyGravity },
       ],
     },
     {
-      title: '▸ World Rotation',
+      title: '▸ Frame 9:16',
       rows: [
-        { key: 'worldRotX', label: 'Rotate X (°)', min: -180, max: 180, step: 1, apply: applyWorldRot },
-        { key: 'worldRotY', label: 'Rotate Y (°)', min: -180, max: 180, step: 1, apply: applyWorldRot },
-        { key: 'worldRotZ', label: 'Rotate Z (°)', min: -180, max: 180, step: 1, apply: applyWorldRot },
+        { key: 'frameMinX',   label: 'Min X',        min: -12, max: 0,   step: 0.1,  apply: applyFrame },
+        { key: 'frameMaxX',   label: 'Max X',        min: 0,   max: 12,  step: 0.1,  apply: applyFrame },
+        { key: 'frameMinZ',   label: 'Min Z (haut)', min: -16, max: 0,   step: 0.1,  apply: applyFrame },
+        { key: 'frameMaxZ',   label: 'Max Z (bas)',  min: 0,   max: 16,  step: 0.1,  apply: applyFrame },
+        { key: 'frameMargin', label: 'Marge',        min: 0.5, max: 1.2, step: 0.01, apply: applyFrame },
       ],
     },
   ];
@@ -292,16 +265,6 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
   copyBtn.style.cssText = 'flex:1;padding:6px;background:#0ff;color:#000;border:none;border-radius:3px;cursor:pointer;font:bold 12px \'Courier New\'';
   copyBtn.addEventListener('click', () => {
     const json = {
-      glb: {
-        GLB_SCALE:      state.glbScale,
-        GLB_SCALE_X:    state.glbScaleX,
-        GLB_ROTATION_X: state.glbRotX,
-        GLB_ROTATION_Y: state.glbRotY,
-        GLB_ROTATION_Z: state.glbRotZ,
-        GLB_POSITION_X: state.glbPosX,
-        GLB_POSITION_Y: state.glbPosY,
-        GLB_POSITION_Z: state.glbPosZ,
-      },
       flippers: {
         FLIPPER_PIVOT_X:    state.pivotX,
         FLIPPER_OFFSET_X:   state.offsetX,
@@ -319,7 +282,13 @@ export function createPlayfieldDebugUI({ gltfModel, flipperBodies, ballBody, wor
         gravityTiltDeg:   state.gravityTilt,
         gravityMagnitude: state.gravityMag,
       },
-      worldRot: { worldRotX: state.worldRotX, worldRotY: state.worldRotY, worldRotZ: state.worldRotZ },
+      frame9_16: {
+        frameMinX:   state.frameMinX,
+        frameMaxX:   state.frameMaxX,
+        frameMinZ:   state.frameMinZ,
+        frameMaxZ:   state.frameMaxZ,
+        frameMargin: state.frameMargin,
+      },
     };
     navigator.clipboard.writeText(JSON.stringify(json, null, 2));
     copyBtn.textContent = '✓ Copied!';

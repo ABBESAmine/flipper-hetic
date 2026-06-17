@@ -62,7 +62,7 @@ import {
   clampBallBody,
   createBallBody,
 } from "../adapters/physics/rapier/ballBody.js";
-import { BALL_RADIUS } from "../domain/constants.js";
+import { BALL_RADIUS, PLUNGER_SPAWN_X, PLUNGER_SPAWN_Y, PLUNGER_SPAWN_Z } from "../domain/constants.js";
 
 function makeFakeRb() {
   const state = {
@@ -109,7 +109,7 @@ describe("resetBallBody", () => {
     resetBallBody(body);
 
     expect(body.rb.setTranslation).toHaveBeenCalledWith(
-      { x: 4.2, y: 0.26, z: 6.05 },
+      { x: PLUNGER_SPAWN_X, y: PLUNGER_SPAWN_Y, z: PLUNGER_SPAWN_Z },
       true,
     );
   });
