@@ -7,17 +7,20 @@
  * La gravite inclinee est appliquee cote moteur physique (Rapier), pas en inclinant les meshes.
  */
 
-// Plateau
-export const TABLE_WIDTH = 9.4;
-export const TABLE_DEPTH = 13;
+// Plateau — proportions 9:16 (portrait) A L'ECRAN.
+// La camera regarde le plateau de biais (~46°), ce qui ecrase la profondeur a
+// la projection (facteur ~0.7). On allonge donc le plateau en unites monde
+// (largeur 11.25 x profondeur 29) pour qu'il SE LISE 9:16 sur l'ecran portrait.
+export const TABLE_WIDTH = 11.25;
+export const TABLE_DEPTH = 29;
 export const TABLE_THICKNESS = 0.5;
 
 // Murs
 export const WALL_HEIGHT = 1;
 export const WALL_THICKNESS = 0.3;
 
-// Drain (ouverture entre les futurs flippers)
-export const DRAIN_OPENING_WIDTH = 2.5;
+// Drain (ouverture centrale du mur bas, entre les flippers)
+export const DRAIN_OPENING_WIDTH = 3.0;
 
 // Bille
 export const BALL_RADIUS = 0.25;
@@ -28,10 +31,10 @@ export const TUNNEL_LENGTH = 3;
 export const TUNNEL_WALL_X = TABLE_WIDTH / 2 - TUNNEL_WIDTH - WALL_THICKNESS / 2;
 export const TUNNEL_WALL_Z = TABLE_DEPTH / 2 - TUNNEL_LENGTH / 2;
 
-// Spawn bille (au centre du tunnel, juste devant le mur du bas)
-export const PLUNGER_SPAWN_X = 4.75;
+// Spawn bille (couloir de lancement, le long du mur droit en bas du plateau)
+export const PLUNGER_SPAWN_X = 5.0;
 export const PLUNGER_SPAWN_Y = 0.65;
-export const PLUNGER_SPAWN_Z = 10.75;
+export const PLUNGER_SPAWN_Z = 13.0;
 
 // Plunger — force d'impulsion (Z negatif = vers le haut du plateau)
 export const PLUNGER_IMPULSE_FORCE = 38;
@@ -41,9 +44,9 @@ export const FLIPPER_LENGTH = 2.0;
 export const FLIPPER_WIDTH = 0.4;
 export const FLIPPER_HEIGHT = 0.3;
 export const FLIPPER_REST_ANGLE = 0.5;   // radians (~28°), battes au repos vers le drain
-export const FLIPPER_PIVOT_X = 2.3;
-export const FLIPPER_OFFSET_X = -0.55;
-export const FLIPPER_PIVOT_Z = 8.45;
+export const FLIPPER_PIVOT_X = 2.1;
+export const FLIPPER_OFFSET_X = 0;
+export const FLIPPER_PIVOT_Z = 12.9;
 export const FLIPPER_PIVOT_Y = 0.55;
 export const FLIPPER_ROT_X = 0.05235987755982989;  // radians (~3°), inclinaison des battes sur l'axe X
 export const FLIPPER_ROT_Z = 0.017453292519943295;  // radians (~1°), inclinaison des battes sur l'axe Z
@@ -75,8 +78,8 @@ export const ARCH_ROT_Y      = 0;
 export const BUMPER_REPULSE_FORCE = 4;
 
 // Drain — seuil Z au-dela duquel la bille est consideree perdue.
-// En dessous des murs bas (z~12) et du spawn (z=10.75), aligned with drain zone mesh.
-export const DRAIN_Z_THRESHOLD = 10.85;
+// Juste apres la ligne des flippers (z~12.9), avant le mur bas (z~14.65).
+export const DRAIN_Z_THRESHOLD = 13.4;
 
 // Flippers — vitesse de rotation (rad/s)
 export const FLIPPER_SPEED = 15;

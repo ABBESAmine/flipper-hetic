@@ -34,3 +34,14 @@ export function loadPlayfieldModel() {
     );
   });
 }
+
+/**
+ * Charge l'asset GLB d'un bumper (pose par-dessus le plateau Three.js).
+ * Resout le gltf brut ; la normalisation (taille / orientation) est faite
+ * dans composition/buildGLBBumpers.js.
+ */
+export function loadBumperModel() {
+  return new Promise((resolve, reject) => {
+    new GLTFLoader().load('/models/bumper.glb', resolve, undefined, reject);
+  });
+}
