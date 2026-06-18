@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import {
   MAX_RENDERER_PIXEL_RATIO,
+  MIN_RENDERER_PIXEL_RATIO,
   RENDERER_ANTIALIAS,
 } from "../../domain/constants.js";
 import {
@@ -13,12 +14,16 @@ import {
 } from "../../domain/viewConfig.js";
 
 function effectivePixelRatio() {
-  return Math.min(window.devicePixelRatio || 1, MAX_RENDERER_PIXEL_RATIO);
+  // Suréchantillonnage : au moins MIN (même sur écran dpr=1), plafonné à MAX.
+  return Math.min(
+    Math.max(window.devicePixelRatio || 1, MIN_RENDERER_PIXEL_RATIO),
+    MAX_RENDERER_PIXEL_RATIO,
+  );
 }
 
 export function createScene() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a1a2e);
+  scene.background = new THREE.Color(0x140d08); // nuit désert (Breaking Bad)
 
   // Camera (config figée dans domain/viewConfig.js)
   const camera = new THREE.PerspectiveCamera(
@@ -36,6 +41,9 @@ export function createScene() {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(effectivePixelRatio());
+  // Ombres portées (profondeur/relief) : map douce, projetées par la dir. light.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.style.margin = "0";
   document.body.style.overflow = "hidden";
   document.body.style.background = "#000"; // bandes de letterbox 9:16
@@ -62,7 +70,20 @@ export function createScene() {
     PLAYFIELD_VIEW_DEFAULTS.dirLightY,
     PLAYFIELD_VIEW_DEFAULTS.dirLightZ,
   );
+  // Projection d'ombres : frustum ortho couvrant tout le plateau (X ≈ ±6,
+  // Z ≈ ±10), biais anti-acné, carte 2048 pour des bords nets.
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.camera.left = -8;
+  dirLight.shadow.camera.right = 8;
+  dirLight.shadow.camera.top = 12;
+  dirLight.shadow.camera.bottom = -12;
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 60;
+  dirLight.shadow.bias = -0.0004;
+  dirLight.shadow.normalBias = 0.02;
   scene.add(dirLight);
+  scene.add(dirLight.target); // cible (0,0,0) par défaut
 
   return { scene, camera, renderer, ambientLight, dirLight };
 }

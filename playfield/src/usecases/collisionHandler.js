@@ -16,6 +16,7 @@ import {
   DRAIN_Z_THRESHOLD,
   COLLISION_COOLDOWN_MS,
   BUMPER_REPULSE_FORCE,
+  SLINGSHOT_REPULSE_FORCE,
 } from "../domain/constants.js";
 
 const IGNORED_TYPES = new Set(["ball", "table"]);
@@ -32,15 +33,15 @@ export function createCollisionHandler(callbacks) {
     return true;
   }
 
-  function emitBumperImpulse(ballPos, otherPos) {
+  function emitRadialImpulse(ballPos, otherPos, force) {
     if (!callbacks.onBumperImpulse || !ballPos || !otherPos) return;
     const dx = ballPos.x - otherPos.x;
     const dz = ballPos.z - otherPos.z;
     const len = Math.hypot(dx, dz) || 1;
     callbacks.onBumperImpulse({
-      x: (dx / len) * BUMPER_REPULSE_FORCE,
+      x: (dx / len) * force,
       y: 0,
-      z: (dz / len) * BUMPER_REPULSE_FORCE,
+      z: (dz / len) * force,
     });
   }
 
@@ -55,7 +56,8 @@ export function createCollisionHandler(callbacks) {
       if (!type || IGNORED_TYPES.has(type)) return false;
       if (!canEmit(type, now)) return false;
       callbacks.onCollision(type);
-      if (type.startsWith("bumper")) emitBumperImpulse(ctx.ballPos, ctx.otherPos);
+      if (type.startsWith("bumper")) emitRadialImpulse(ctx.ballPos, ctx.otherPos, BUMPER_REPULSE_FORCE);
+      else if (type === "slingshot") emitRadialImpulse(ctx.ballPos, ctx.otherPos, SLINGSHOT_REPULSE_FORCE);
       return true;
     },
 

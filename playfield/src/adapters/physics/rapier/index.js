@@ -42,7 +42,5 @@ export { createArchBody, createTriangleBody, createCylinderBody, createDiamondBo
 export {
   createLaunchGateBody,
   openLaunchGate,
-  closeLaunchGate,
-  updateLaunchGate,
 } from "./launchGateBody.js";
 export { attachCollisionListener } from "./collisionListener.js";

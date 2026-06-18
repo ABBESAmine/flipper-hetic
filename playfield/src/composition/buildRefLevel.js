@@ -8,12 +8,12 @@
  * éléments statiques sont des meshes posés une fois dans visualsGroup).
  */
 import * as THREE from "three";
-import { createStaticBoxBody, createCylinderBody } from "../adapters/physics/index.js";
+import { createStaticBoxBody, createCylinderBody, createSensorBoxBody } from "../adapters/physics/index.js";
 import { buildActors } from "./buildActors.js";
-import { NEON, glowTexture } from "../adapters/renderer/playfieldVisuals.js";
+import { BB, glowTexture } from "../adapters/renderer/playfieldVisuals.js";
 import {
   WALLS, SLINGSHOTS, BUMPERS, BUMPER_RADIUS, POSTS, POST_RADIUS,
-  GATE, CHASE, TARGETS, TARGET_HALF, mapPoint, SCALE,
+  GATE, SPECIAL_ZONES, mapPoint, SCALE,
 } from "./refLayout.js";
 import {
   FLIPPER_PIVOT_X, FLIPPER_OFFSET_X, FLIPPER_PIVOT_Z, FLIPPER_PIVOT_Y,
@@ -24,21 +24,67 @@ import { GLB_PROPS } from "./glbRegistry.js";
 const WALL_HEIGHT = 1.0;
 const WALL_THICK = 0.3;
 const PROP_HEIGHT = 1.0;
+const WALL_SIDE_TILE = 1.0; // longueur monde par répétition de la tôle (côtés)
+const WALL_TOP_TILE = 2.2;  // longueur monde par répétition de la bande de vis (dessus)
 
 function quatYaw(yaw) {
   const h = yaw / 2;
   return { x: 0, y: Math.sin(h), z: 0, w: Math.cos(h) };
 }
 
-function neonWallMaterial(intensity = 0.75) {
+// Textures de mur chargées une fois (clonées par segment pour le tiling).
+const _texLoader = new THREE.TextureLoader();
+let _wallSideTex = null;
+let _wallTopTex = null;
+function wallBaseTextures() {
+  if (!_wallSideTex) {
+    _wallSideTex = _texLoader.load("/models/texture_wall_side.png");
+    _wallTopTex = _texLoader.load("/models/texture_wall_top.png");
+    for (const t of [_wallSideTex, _wallTopTex]) {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    }
+  }
+  return { side: _wallSideTex, top: _wallTopTex };
+}
+
+/** Métal industriel émissif (slingshots/kickers) : base sombre + liseré coloré. */
+function wallMaterial(intensity = 0.2, glow = BB.rust) {
   return new THREE.MeshStandardMaterial({
-    color: NEON.green, emissive: NEON.green, emissiveIntensity: intensity,
-    roughness: 0.4, metalness: 0.1,
+    color: 0x2e2418, emissive: glow, emissiveIntensity: intensity,
+    roughness: 0.6, metalness: 0.3,
   });
 }
 
-/** Crée un mur-segment (collider box rotée + mesh émissif) entre A et B mappés. */
-function addSegment(world, group, a, b, { type = "wall", intensity = 0.75, height = WALL_HEIGHT } = {}) {
+/**
+ * Matériaux texturés d'un mur métallique : tôle rouillée sur les côtés, bande de
+ * têtes de vis sur le dessus. Tableau de 6 (faces BoxGeometry : +X,-X,+Y,-Y,+Z,-Z) :
+ * index 2 = +Y = dessus. Textures clonées + répétées selon la longueur du mur.
+ */
+function wallMaterials(len, height) {
+  const { side, top } = wallBaseTextures();
+
+  const sideMap = side.clone();
+  sideMap.repeat.set(Math.max(1, Math.round(len / WALL_SIDE_TILE)), Math.max(1, Math.round(height / WALL_SIDE_TILE)));
+  sideMap.needsUpdate = true;
+
+  const topMap = top.clone();
+  topMap.repeat.set(Math.max(1, Math.round(len / WALL_TOP_TILE)), 1);
+  topMap.needsUpdate = true;
+
+  const sideMat = new THREE.MeshStandardMaterial({
+    map: sideMap, emissiveMap: sideMap, emissive: 0xffffff, emissiveIntensity: 0.3,
+    metalness: 0.5, roughness: 0.75,
+  });
+  const topMat = new THREE.MeshStandardMaterial({
+    map: topMap, emissiveMap: topMap, emissive: 0xffffff, emissiveIntensity: 0.35,
+    metalness: 0.5, roughness: 0.7,
+  });
+  return [sideMat, sideMat, topMat, sideMat, sideMat, sideMat];
+}
+
+/** Crée un mur-segment (collider box rotée + mesh) entre A et B mappés. */
+function addSegment(world, group, a, b, { type = "wall", intensity = 0.2, height = WALL_HEIGHT, glow = BB.rust } = {}) {
   const dx = b.x - a.x;
   const dz = b.z - a.z;
   const len = Math.hypot(dx, dz);
@@ -52,10 +98,9 @@ function addSegment(world, group, a, b, { type = "wall", intensity = 0.75, heigh
     type,
   });
 
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(len, height, WALL_THICK),
-    neonWallMaterial(intensity),
-  );
+  // Murs = métal texturé (tôle + vis sur le dessus) ; slingshots = émissif hazmat.
+  const material = type === "wall" ? wallMaterials(len, height) : wallMaterial(intensity, glow);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, height, WALL_THICK), material);
   mesh.position.set(mid.x, mid.y, mid.z);
   mesh.rotation.y = yaw;
   group.add(mesh);
@@ -73,11 +118,12 @@ function addBumper(world, group, glowTex, center, radius, glbOriginal) {
       x: center.x, z: center.z, fitDiameter: cfg.fitDiameter, rotYDeg: cfg.rotYDeg, yOffset: cfg.yOffset,
     }));
   } else {
+    // Fallback procédural = baril chimique : fût rouille + couvercle vert toxique.
     const ring = new THREE.Mesh(
       new THREE.CylinderGeometry(radius, radius, PROP_HEIGHT, 30),
       new THREE.MeshStandardMaterial({
-        color: NEON.green, emissive: NEON.green, emissiveIntensity: 1.0,
-        roughness: 0.35, metalness: 0.3,
+        color: BB.rust, emissive: BB.rust, emissiveIntensity: 0.5,
+        roughness: 0.55, metalness: 0.4,
       }),
     );
     ring.position.set(center.x, PROP_HEIGHT / 2, center.z);
@@ -86,7 +132,7 @@ function addBumper(world, group, glowTex, center, radius, glbOriginal) {
     const cap = new THREE.Mesh(
       new THREE.CylinderGeometry(radius * 0.5, radius * 0.5, PROP_HEIGHT * 1.25, 24),
       new THREE.MeshStandardMaterial({
-        color: NEON.bright, emissive: NEON.bright, emissiveIntensity: 1.6, roughness: 0.3,
+        color: BB.acid, emissive: BB.acid, emissiveIntensity: 1.2, roughness: 0.35,
       }),
     );
     cap.position.set(center.x, PROP_HEIGHT * 0.65, center.z);
@@ -95,29 +141,12 @@ function addBumper(world, group, glowTex, center, radius, glbOriginal) {
 
   // Halo additif conservé dans les deux cas.
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: glowTex, color: NEON.green, blending: THREE.AdditiveBlending,
-    transparent: true, depthWrite: false, opacity: 0.5,
+    map: glowTex, color: BB.acid, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false, opacity: 0.45,
   }));
   glow.position.set(center.x, PROP_HEIGHT, center.z);
   glow.scale.set(radius * 4, radius * 4, 1);
   group.add(glow);
-}
-
-/** Texture d'une lettre (cible HETIC), façon référence. */
-function letterTexture(letter) {
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
-  const g = c.getContext("2d");
-  g.fillStyle = "#03130a";
-  g.fillRect(0, 0, 128, 128);
-  g.fillStyle = "#c6ffc6";
-  g.font = "bold 96px monospace";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText(letter, 64, 72);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
 }
 
 /** Gate one-way du couloir : mesh semi-transparent, sans collider (v1 ouvert). */
@@ -130,33 +159,12 @@ function addGate(group, a, b) {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(len, h, WALL_THICK),
     new THREE.MeshStandardMaterial({
-      color: NEON.bright, emissive: NEON.bright, emissiveIntensity: 0.6,
-      transparent: true, opacity: 0.4,
+      color: BB.meth, emissive: BB.meth, emissiveIntensity: 0.6,
+      transparent: true, opacity: 0.35,
     }),
   );
   mesh.position.set((a.x + b.x) / 2, h / 2, (a.z + b.z) / 2);
   mesh.rotation.y = yaw;
-  group.add(mesh);
-}
-
-/** Banque de cibles HETIC : collider box + mesh lettré. */
-function addTarget(world, group, center, letter) {
-  const w = TARGET_HALF * 2 * SCALE; // largeur
-  const d = 1.6 * SCALE;             // profondeur (1.6 réf)
-  const h = 3.4 * SCALE;             // hauteur (3.4 réf)
-  createStaticBoxBody(world, {
-    width: w, height: h, depth: d,
-    position: { x: center.x, y: h / 2, z: center.z },
-    type: "wall",
-  });
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({
-      color: 0x0a2814, emissive: NEON.green, emissiveIntensity: 0.25,
-      roughness: 0.5, map: letterTexture(letter),
-    }),
-  );
-  mesh.position.set(center.x, h / 2, center.z);
   group.add(mesh);
 }
 
@@ -165,22 +173,12 @@ function addKnob(group, x) {
   const knob = new THREE.Mesh(
     new THREE.CylinderGeometry(0.35, 0.35, 0.5, 18),
     new THREE.MeshStandardMaterial({
-      color: NEON.green, emissive: NEON.green, emissiveIntensity: 1.0,
-      roughness: 0.3, metalness: 0.35,
+      color: BB.hazmat, emissive: BB.hazmat, emissiveIntensity: 0.8,
+      roughness: 0.4, metalness: 0.3,
     }),
   );
   knob.position.set(x, FLIPPER_PIVOT_Y, FLIPPER_PIVOT_Z);
   group.add(knob);
-}
-
-/** Point de chase light (sphère émissive, statique). */
-function addChaseDot(group, p) {
-  const dot = new THREE.Mesh(
-    new THREE.SphereGeometry(0.9 * SCALE, 12, 10),
-    new THREE.MeshStandardMaterial({ color: NEON.green, emissive: NEON.green, emissiveIntensity: 0.6 }),
-  );
-  dot.position.set(p.x, 0.9 * SCALE, p.z);
-  group.add(dot);
 }
 
 /** Post guide : collider cylindre + (GLB ou cylindre procédural). */
@@ -198,11 +196,73 @@ function addPost(world, group, center, radius, glbOriginal) {
   const post = new THREE.Mesh(
     new THREE.CylinderGeometry(radius, radius, PROP_HEIGHT, 16),
     new THREE.MeshStandardMaterial({
-      color: NEON.bright, emissive: NEON.bright, emissiveIntensity: 1.3, roughness: 0.3,
+      color: BB.hazmat, emissive: BB.hazmat, emissiveIntensity: 0.9, roughness: 0.4,
     }),
   );
   post.position.set(center.x, PROP_HEIGHT / 2, center.z);
   group.add(post);
+}
+
+/** Texte court sur fond transparent (label de zone, lisible en billboard). */
+function labelTexture(text) {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 128;
+  const g = c.getContext("2d");
+  g.clearRect(0, 0, 256, 128);
+  g.fillStyle = "#ffffff";
+  g.font = "bold 80px 'Arial Black', Impact, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText(text, 128, 70);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/**
+ * Zone spéciale (Tuco / RV) : capteur qui émet `type` au passage de la bille
+ * (déclenche le score + la vidéo backglass déjà câblés) + visuel marquant
+ * (disque encastré, anneau lumineux, halo, label en billboard).
+ */
+function addSpecialZone(world, group, glowTex, { center, radius, color, label, type }) {
+  createSensorBoxBody(world, {
+    width: radius * 2, height: 1.0, depth: radius * 2,
+    position: { x: center.x, y: 0.5, z: center.z },
+    type,
+  });
+
+  const disc = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius, radius, 0.06, 32),
+    new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.85, metalness: 0.2 }),
+  );
+  disc.position.set(center.x, 0.04, center.z);
+  group.add(disc);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, radius * 0.12, 12, 36),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.6, roughness: 0.3 }),
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(center.x, 0.14, center.z);
+  group.add(ring);
+
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTex, color, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false, opacity: 0.7,
+  }));
+  glow.position.set(center.x, 0.35, center.z);
+  glow.scale.set(radius * 5, radius * 5, 1);
+  group.add(glow);
+
+  const labelSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: labelTexture(label), transparent: true, depthWrite: false, depthTest: false,
+  }));
+  labelSprite.position.set(center.x, 0.9, center.z);
+  labelSprite.scale.set(radius * 2.6, radius * 1.3, 1);
+  group.add(labelSprite);
+
+  return { ring, glow };
 }
 
 export async function buildRefLevel({ scene, world }) {
@@ -220,10 +280,10 @@ export async function buildRefLevel({ scene, world }) {
   if (glb.bumper) applyPropMaps(glb.bumper, GLB_PROPS.bumper.maps);
 
   for (const [a, b] of WALLS) {
-    addSegment(world, visualsGroup, mapPoint(a), mapPoint(b), { type: "wall", intensity: 0.7 });
+    addSegment(world, visualsGroup, mapPoint(a), mapPoint(b), { type: "wall" });
   }
   for (const [a, b] of SLINGSHOTS) {
-    addSegment(world, visualsGroup, mapPoint(a), mapPoint(b), { type: "slingshot", intensity: 1.4, height: WALL_HEIGHT + 0.1 });
+    addSegment(world, visualsGroup, mapPoint(a), mapPoint(b), { type: "slingshot", intensity: 1.0, height: WALL_HEIGHT + 0.1, glow: BB.hazmat });
   }
   for (const c of BUMPERS) {
     addBumper(world, visualsGroup, glowTex, mapPoint(c), BUMPER_RADIUS * SCALE, glb.bumper);
@@ -231,13 +291,15 @@ export async function buildRefLevel({ scene, world }) {
   for (const p of POSTS) {
     addPost(world, visualsGroup, mapPoint(p), POST_RADIUS * SCALE, glb.post);
   }
-  for (const t of TARGETS) {
-    addTarget(world, visualsGroup, mapPoint(t), t.ch);
-  }
-  for (const p of CHASE) {
-    addChaseDot(visualsGroup, mapPoint(p));
-  }
   addGate(visualsGroup, mapPoint(GATE[0]), mapPoint(GATE[1]));
+
+  // Zones spéciales (Tuco +1000, RV +5000) — capteurs + visuels marquants.
+  for (const z of SPECIAL_ZONES) {
+    addSpecialZone(world, visualsGroup, glowTex, {
+      center: mapPoint(z), radius: z.radius * SCALE,
+      color: BB[z.color], label: z.label, type: z.type,
+    });
+  }
 
   // Knobs procéduraux au pivot — seulement si le flipper reste procédural.
   if (!glb.flipper) {
@@ -265,7 +327,8 @@ export async function buildRefLevel({ scene, world }) {
         x: cfg.xOffset, y: cfg.yOffset, z: cfg.zOffset,
         fitLength: cfg.fitLength,
         rotYDeg: cfg.rotYDeg,
-        mirror: !isLeft, // droit = miroir du gauche
+        mirror: !isLeft, // miroir X : droit = miroir du gauche (sens vertical OK)
+        mirrorZ: true,   // miroir Z : remet les deux battes dans le bon sens horizontal
       }));
       const bat = mesh.getObjectByName("flipper-bat");
       if (bat) bat.visible = false;

@@ -9,7 +9,6 @@ import {
   postStepFlippers,
   clampBallBody,
   resetBallBody,
-  updateLaunchGate,
   openLaunchGate,
 } from "../adapters/physics/index.js";
 
@@ -39,8 +38,6 @@ export function startPlayfieldLoop(deps) {
   let lastTime = performance.now();
 
   function animate() {
-    requestAnimationFrame(animate);
-
     const now = performance.now();
     const delta = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
@@ -49,7 +46,6 @@ export function startPlayfieldLoop(deps) {
     world.step(FIXED_TIME_STEP, delta, MAX_SUB_STEPS);
     postStepFlippers(flipperBodies);
     clampBallBody(ballBody);
-    updateLaunchGate(launchGateBody, ballBody.position.z);
 
     if (collisionHandler.checkDrain(ballBody.position.z, gameState.status)) {
       resetBallBody(ballBody);
@@ -59,6 +55,7 @@ export function startPlayfieldLoop(deps) {
 
     syncMeshesWithBodies(syncPairs);
     renderer.render(scene, resolveCamera());
+    requestAnimationFrame(animate);
   }
 
   if (typeof onResize === "function") {

@@ -44,12 +44,18 @@ function loadDataTexture(url, flipY = false) {
   return t;
 }
 
-// Texture de couleur (albédo / base color) : espace sRGB.
+// Texture de couleur (albédo / base color) : espace sRGB. Mipmaps trilinéaires +
+// anisotropie maximale → surface STABLE (pas de fourmillement). La netteté finale
+// vient du supersampling du renderer (pixel ratio), pas du filtre de texture :
+// sur un prop minifié, sans mipmaps ça fourmille, avec ça reste propre.
 function loadColorTexture(url, flipY = false) {
   const t = texLoader.load(url);
   t.flipY = flipY;
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = ANISOTROPY;
+  t.generateMipmaps = true;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.magFilter = THREE.LinearFilter;
   return t;
 }
 
@@ -118,7 +124,7 @@ export function applyPropMaps(object3d, maps) {
  * reste à l'origine du modèle). `fitLength` met la plus grande dimension du
  * modèle à cette longueur (auto-échelle, indépendant de l'orientation).
  */
-export function instantiateGLB(original, { x = 0, y = 0, z = 0, scale = 1, rotYDeg = 0, fitLength = null, mirror = false } = {}) {
+export function instantiateGLB(original, { x = 0, y = 0, z = 0, scale = 1, rotYDeg = 0, fitLength = null, mirror = false, mirrorZ = false } = {}) {
   const obj = original.clone(true);
   if (fitLength) {
     obj.updateMatrixWorld(true);
@@ -129,7 +135,8 @@ export function instantiateGLB(original, { x = 0, y = 0, z = 0, scale = 1, rotYD
   } else {
     obj.scale.set(scale.x, scale.y, scale.z);
   }
-  if (mirror) obj.scale.x *= -1; // symétrie horizontale (flipper droit = miroir du gauche)
+  if (mirror) obj.scale.x *= -1;  // symétrie sur X (flipper droit = miroir du gauche)
+  if (mirrorZ) obj.scale.z *= -1; // symétrie sur Z (retourne la batte horizontalement)
   obj.rotation.y = (rotYDeg * Math.PI) / 180;
   obj.position.set(x, y, z);
   return obj;

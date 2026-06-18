@@ -30,8 +30,8 @@ function createOneFlipperMesh(scene, side) {
   const bat = new THREE.Mesh(
     geometry,
     new THREE.MeshStandardMaterial({
-      color: 0x5dd86a, emissive: 0x5dd86a, emissiveIntensity: 1.0,
-      metalness: 0.35, roughness: 0.3,
+      color: 0xf4d03f, emissive: 0xf4d03f, emissiveIntensity: 0.8,
+      metalness: 0.35, roughness: 0.35,
     }),
   );
   bat.name = "flipper-bat";

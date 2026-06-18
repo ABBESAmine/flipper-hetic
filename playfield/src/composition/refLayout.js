@@ -18,19 +18,24 @@ export const mapX = (x) => (x - REF.centerX) * SCALE;
 export const mapZ = (y) => (REF.centerY - y) * SCALE; // +Y (haut) → -Z (haut)
 export const mapPoint = (p) => ({ x: mapX(p.x), z: mapZ(p.y) });
 
-// Murs (segments [a,b]) — périmètre, arches, couloir de lancement, entonnoirs.
+// Périmètre rectangulaire (coins à angle droit). Face EXTERNE affleurant le bord
+// du cadre visible 9:16 → aucun vide entre les murs et le bord, et le dessus du
+// mur (épaisseur) reste visible : gauche x=2.4 (face ext ≈ -3.5 monde), droite
+// x=52.4 (≈ 5.8), haut y=100 (≈ -8.79). Pas d'arches : coins hauts nets.
 export const WALLS = [
-  [{ x: 3, y: 10 }, { x: 3, y: 92 }],   // gauche
-  [{ x: 3, y: 92 }, { x: 12, y: 99 }],  // arche haut-gauche
-  [{ x: 12, y: 99 }, { x: 42, y: 99 }], // haut
-  [{ x: 42, y: 99 }, { x: 52, y: 93 }], // arche haut-droite
-  [{ x: 52, y: 8 }, { x: 52, y: 96 }],  // couloir de lancement (mur extérieur)
-  [{ x: 44, y: 8 }, { x: 44, y: 84 }],  // séparateur couloir (partie pleine)
-  [{ x: 44, y: 8 }, { x: 52, y: 8 }],   // fond du couloir
+  [{ x: 2.4, y: 8 }, { x: 2.4, y: 100 }],    // gauche
+  [{ x: 2.4, y: 100 }, { x: 52.4, y: 100 }], // haut
+  [{ x: 52.4, y: 100 }, { x: 52.4, y: 8 }],  // droite (mur extérieur couloir)
+  [{ x: 44, y: 8 }, { x: 44, y: 84 }],       // séparateur couloir (partie pleine)
+  [{ x: 44, y: 8 }, { x: 52.4, y: 8 }],      // fond du couloir
+  // Déflecteur interne au sommet du couloir : diagonale qui courbe la bille
+  // lancée vers la gauche dans le plateau. La bille sort par l'ouverture x=44
+  // (y 84→~95) puis par-dessus le déflecteur vers la gauche.
+  [{ x: 52.4, y: 93 }, { x: 40, y: 98 }],    // guide de lancement (couloir → plateau)
   // gate one-way réf (44,84)-(44,95) → laissée OUVERTE en v1 (sinon la bille
   // est piégée dans le couloir). Sortie du couloir vers le plateau par le haut.
-  [{ x: 3, y: 40 }, { x: 8, y: 16 }],   // entonnoir gauche (vers flipper gauche)
-  [{ x: 44, y: 40 }, { x: 33, y: 16 }], // entonnoir droit (vers flipper droit)
+  [{ x: 2.4, y: 40 }, { x: 8, y: 16 }],      // entonnoir gauche (vers flipper gauche)
+  [{ x: 44, y: 40 }, { x: 33, y: 16 }],      // entonnoir droit (vers flipper droit)
 ];
 
 // Slingshots (rebond actif au-dessus des flippers).
@@ -47,25 +52,17 @@ export const BUMPERS = [{ x: 14, y: 68 }, { x: 28, y: 79 }, { x: 33, y: 63 }];
 export const POST_RADIUS = 1.3;
 export const POSTS = [{ x: 20, y: 28 }, { x: 28, y: 28 }];
 
-// Banque de cibles "HETIC" (scoring branché plus tard ; ici simples obstacles).
-export const TARGET_HALF = 1.8;
-export const TARGETS = ["H", "E", "T", "I", "C"].map((ch, i) => ({
-  ch, x: 8 + i * 7.5, y: 89,
-}));
-
 // Gate one-way du couloir (réf 44,84→44,95) : mesh semi-transparent, sans
 // collider en v1 (la bille la traverse pour sortir du couloir).
 export const GATE = [{ x: 44, y: 84 }, { x: 44, y: 95 }];
 
-// Chase lights : anneau de points sur le bord du cadre visible (réf).
-export const CHASE = (() => {
-  const ring = [];
-  for (let x = 3; x <= 51; x += 4) ring.push({ x, y: 98 });    // haut
-  for (let y = 92; y >= 12; y -= 7) ring.push({ x: 1.5, y });  // gauche
-  for (let y = 92; y >= 12; y -= 7) ring.push({ x: 52.5, y }); // droite
-  for (let x = 3; x <= 51; x += 4) ring.push({ x, y: 7 });     // bas
-  return ring;
-})();
+// Zones spéciales (capteurs) — déclenchent les events DÉJÀ câblés au passage de
+// la bille : `tunnel` = Tuco (+1000), `tunnel-rv` = RV (+5000). `color` est une
+// clé de la palette BB ; `radius` est en unités réf (× SCALE → monde).
+export const SPECIAL_ZONES = [
+  { type: "tunnel",    label: "TUCO", color: "acid", x: 6,  y: 92, radius: 4.0 },
+  { type: "tunnel-rv", label: "RV",   color: "meth", x: 39, y: 76, radius: 4.5 },
+];
 
 // Spawn bille (couloir de lancement) et seuil de drain.
 export const BALL_START = { x: 48, y: 11 };

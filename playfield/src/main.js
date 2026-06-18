@@ -31,8 +31,7 @@ import { buildRefLevel } from "./composition/buildRefLevel.js";
 import { groupLevelMeshes } from "./composition/levelGroup.js";
 import { startPlayfieldLoop } from "./composition/runGameLoop.js";
 import { createPlayfieldViewRuntime } from "./composition/playfieldViewRuntime.js";
-import { createFloorMesh } from "./adapters/renderer/floorMesh.js";
-import { createFloorGrid } from "./adapters/renderer/playfieldVisuals.js";
+import { createFloorMesh, createShadowCatcher } from "./adapters/renderer/floorMesh.js";
 import { PLAYFIELD_VIEW_DEFAULTS } from "./domain/viewConfig.js";
 await initRapier();
 
@@ -49,18 +48,31 @@ const world = createPhysicsWorld();
 const level = await buildRefLevel({ scene, world });
 const levelGroup = groupLevelMeshes(scene, level.syncPairs);
 
-// Sol dégradé + grille néon, dimensionnés sur le cadre 9:16.
+// Sol = texture de fond peinte (désert Breaking Bad + route), calée sur le cadre
+// 9:16. margin:0 → l'image s'aligne sur les bords visibles (cadre peint inclus).
 const frameBounds = {
   minX: PLAYFIELD_VIEW_DEFAULTS.frameMinX,
   maxX: PLAYFIELD_VIEW_DEFAULTS.frameMaxX,
   minZ: PLAYFIELD_VIEW_DEFAULTS.frameMinZ,
   maxZ: PLAYFIELD_VIEW_DEFAULTS.frameMaxZ,
 };
-levelGroup.add(createFloorMesh({ ...frameBounds, y: 0 }));
-levelGroup.add(createFloorGrid({ ...frameBounds, y: 0.02 }));
+levelGroup.add(createFloorMesh({
+  ...frameBounds, y: 0, margin: 0, textureUrl: "/models/texture_fond.png",
+}));
+// Capteur d'ombres au-dessus du sol peint (profondeur sans altérer la texture).
+levelGroup.add(createShadowCatcher({ ...frameBounds, y: 0.015 }));
 
-// Niveau néon (murs, slingshots, bumpers, posts) construit depuis refLayout.
+// Niveau (murs, slingshots, barils, posts) construit depuis refLayout.
 levelGroup.add(level.visualsGroup);
+
+// Tous les meshes solides du niveau projettent (et reçoivent) des ombres ; les
+// sprites (halos, labels) sont ignorés. La bille et les flippers aussi.
+level.visualsGroup.traverse((o) => {
+  if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+});
+for (const { mesh } of level.syncPairs) {
+  mesh.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+}
 
 const viewRuntime = createPlayfieldViewRuntime({
   camera,

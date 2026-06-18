@@ -79,6 +79,9 @@ export const ARCH_ROT_Y      = 0;
 // Bumpers
 export const BUMPER_REPULSE_FORCE = 4;
 
+// Slingshots — kick actif (impulsion radiale depuis le centre du segment)
+export const SLINGSHOT_REPULSE_FORCE = 3;
+
 // Drain — seuil Z au-dela duquel la bille est consideree perdue.
 // Relatif au bord bas (fixe), pas à TABLE_DEPTH : l'allongement du plateau ne
 // doit pas déplacer le seuil de drain.
@@ -91,7 +94,11 @@ export const FLIPPER_SPEED = 15;
 export const COLLISION_COOLDOWN_MS = 300;
 
 // Rendu WebGL — cibles machines integrees / ecrans haute densite
-/** Plafonne devicePixelRatio (souvent la cause n°1 des lags sur PC integre). */
-export const MAX_RENDERER_PIXEL_RATIO = 1.5;
-/** false = meilleures perfs ; true = contours plus lisses (PC demo). */
-export const RENDERER_ANTIALIAS = false;
+/** Plafonne devicePixelRatio. Relevé à 2 pour supersampler le rendu (motifs des
+ *  props nets, moins d'aliasing). Baisser à 1.5/1 si le cabinet rame. */
+export const MAX_RENDERER_PIXEL_RATIO = 2;
+/** Cible de supersampling minimale : force un rendu >= ce ratio même sur écran
+ *  non hi-DPI (anti-aliasing par suréchantillonnage). Baisser si lag. */
+export const MIN_RENDERER_PIXEL_RATIO = 1.75;
+/** true = contours plus lisses (MSAA). Coût modéré, gros gain de netteté. */
+export const RENDERER_ANTIALIAS = true;

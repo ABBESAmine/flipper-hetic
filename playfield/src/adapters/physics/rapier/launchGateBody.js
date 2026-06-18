@@ -14,9 +14,12 @@ import { getRapier } from "./init.js";
 import { createBodyHandle } from "./bodyHandle.js";
 import { MATERIALS } from "./world.js";
 
-const GATE_X        = 3.55;
-const GATE_Z        = -4.3;
-const GATE_W        = 3.55;
+// v1 : le gate reste OUVERT (sous la table, invisible) — aucun mur ne se ferme
+// en cours de jeu (cf. boucle, plus d'appel à un updateLaunchGate). Ces valeurs
+// ne servent qu'à dimensionner le collider du body (jamais montré).
+const GATE_X        = 4.14;
+const GATE_Z        = -6.57;
+const GATE_W        = 1.6;
 const GATE_H        = 1;
 const GATE_D        = 0.15;
 const GATE_ROTY_DEG = 90;
@@ -57,11 +60,6 @@ export function openLaunchGate(gate) {
   gate.userData.state = "open";
 }
 
-export function closeLaunchGate(gate) {
-  gate.rb.setTranslation({ x: gate.userData.closedX, y: GATE_Y_CLOSED, z: gate.userData.closedZ }, true);
-  gate.userData.state = "closed";
-}
-
 /**
  * Repositionne et redimensionne la gate (debug).
  * Recrée le collider pour appliquer la nouvelle taille/rotation.
@@ -94,20 +92,4 @@ export function setGateConfig(gate, { x, z, w, h, d, rotY = 0 } = {}) {
 
   gate.rb.setTranslation({ x, y: GATE_Y_CLOSED, z }, true);
   gate.userData.state = "closed";
-}
-
-/**
- * Ferme la porte dès que la bille a quitté le tunnel par le haut.
- * Idempotent : ne fait rien si déjà fermée.
- */
-export function updateLaunchGate(gate, ballZ) {
-  if (gate.userData.state !== "open") return;
-  const triggerZ = gate.userData.closedZ - gate.userData.d / 2;
-  if (ballZ < triggerZ && gate.userData.pendingCloseAt === undefined) {
-    gate.userData.pendingCloseAt = performance.now() + 140;
-  }
-  if (gate.userData.pendingCloseAt !== undefined && performance.now() >= gate.userData.pendingCloseAt) {
-    gate.userData.pendingCloseAt = undefined;
-    closeLaunchGate(gate);
-  }
 }

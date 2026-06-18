@@ -26,6 +26,7 @@ Ce document centralise les noms d'événements Socket.IO et les payloads attendu
 | `bumper_50` | +50 | Bumper secondaire |
 | `bumper_25` | +25 | Bumper périphérique |
 | `bumper_10` | +10 | Bumper faible (diamant, triangle) |
+| `slingshot` | +25 | Slingshot (kicker hazmat au-dessus des flippers) |
 | `tunnel` | +1000 | Zone spéciale Tuco (déclenche `special_event`) |
 | `tunnel-rv` | +5000 | Zone spéciale RV (déclenche `special_event`) |
 | `wall` | +0 | Mur (valide, sans points) |

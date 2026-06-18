@@ -7,7 +7,7 @@
  * NDC : il reste correct même si la caméra est inclinée (vue 3/4 top-down).
  */
 import * as THREE from "three";
-import { MAX_RENDERER_PIXEL_RATIO } from "../domain/constants.js";
+import { MAX_RENDERER_PIXEL_RATIO, MIN_RENDERER_PIXEL_RATIO } from "../domain/constants.js";
 import {
   PLAYFIELD_VIEW_DEFAULTS,
   PLAYFIELD_TARGET_ASPECT,
@@ -161,7 +161,10 @@ export function createPlayfieldViewRuntime(deps, params = PLAYFIELD_VIEW_DEFAULT
     }
 
     renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, MAX_RENDERER_PIXEL_RATIO),
+      Math.min(
+        Math.max(window.devicePixelRatio || 1, MIN_RENDERER_PIXEL_RATIO),
+        MAX_RENDERER_PIXEL_RATIO,
+      ),
     );
     renderer.setSize(width, height);
 
