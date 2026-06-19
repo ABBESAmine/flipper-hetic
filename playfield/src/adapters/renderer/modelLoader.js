@@ -1,9 +1,5 @@
-﻿import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// Valeurs de transform par defaut du groupe d'environnement (cf. buildLevel ->
-// gltfModel/gltfInner), reglables via le panneau debug PFD -> section GLB Visual.
-// Recalees sur l'environnement procedural actuel : transform neutre (identite),
-// pour que le panneau debug parte de l'etat reel du plateau sans le deformer.
 export const GLB_SCALE_X = 1;
 export const GLB_SCALE_Y = 1;
 export const GLB_SCALE_Z = 1;
@@ -29,8 +25,6 @@ const EXTRA_MODELS = [
   'Obstacle-tunnel2',
 ];
 
-// Transform original des obstacles (exportés depuis Blender pour l'ancien plateau GLB).
-// Positions à réajuster via le panneau debug une fois placés sur le nouveau plateau.
 const EXTRA_SCALE_X = 5.9;
 const EXTRA_SCALE_Y = 2.85;
 const EXTRA_SCALE_Z = 3.25;
@@ -42,21 +36,21 @@ const EXTRA_POS_Y   = -6.5;
 const EXTRA_POS_Z   = 1.35;
 const DEG = Math.PI / 180;
 
-function loadGLB(loader, path) {
-  return new Promise((resolve, reject) =>
-    loader.load(path, (gltf) => resolve(gltf.scene), undefined, reject),
-  );
+class ModelLoader {
+  async loadExtra() {
+    const loader = new GLTFLoader();
+    const scenes = await Promise.all(
+      EXTRA_MODELS.map(name => new Promise((resolve, reject) =>
+        loader.load(`/models/${name}.glb`, (gltf) => resolve(gltf.scene), undefined, reject),
+      )),
+    );
+    for (const m of scenes) {
+      m.scale.set(EXTRA_SCALE_X, EXTRA_SCALE_Y, EXTRA_SCALE_Z);
+      m.rotation.set(EXTRA_ROT_X * DEG, EXTRA_ROT_Y * DEG, EXTRA_ROT_Z * DEG);
+      m.position.set(EXTRA_POS_X, EXTRA_POS_Y, EXTRA_POS_Z);
+    }
+    return scenes;
+  }
 }
 
-export async function loadExtraModels() {
-  const loader = new GLTFLoader();
-  const scenes = await Promise.all(
-    EXTRA_MODELS.map(name => loadGLB(loader, `/models/${name}.glb`)),
-  );
-  for (const m of scenes) {
-    m.scale.set(EXTRA_SCALE_X, EXTRA_SCALE_Y, EXTRA_SCALE_Z);
-    m.rotation.set(EXTRA_ROT_X * DEG, EXTRA_ROT_Y * DEG, EXTRA_ROT_Z * DEG);
-    m.position.set(EXTRA_POS_X, EXTRA_POS_Y, EXTRA_POS_Z);
-  }
-  return scenes;
-}
+export default ModelLoader;
