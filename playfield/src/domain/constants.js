@@ -40,7 +40,7 @@ export const PLUNGER_SPAWN_Z = 7.2;
 export const LAUNCH_WALL_OFFSET_X = 0.5;
 export const LAUNCH_WALL_THICKNESS = 0.15; // plus fins que les murs de contour
 export const LAUNCH_WALL_LENGTH = 22;
-export const LAUNCH_WALL_Z = 2.0;
+export const LAUNCH_WALL_Z = PLUNGER_SPAWN_Z - LAUNCH_WALL_LENGTH / 2;
 export const LAUNCH_WALL_LEFT_X = PLUNGER_SPAWN_X - LAUNCH_WALL_OFFSET_X;
 export const LAUNCH_WALL_RIGHT_X = PLUNGER_SPAWN_X + LAUNCH_WALL_OFFSET_X;
 
@@ -76,6 +76,18 @@ export const SLINGSHOT_TOP_OFFSET = 2.4; // distance Z entre l'extremite haute e
 // Deflecteurs d'angle haut — diagonales dans les deux coins superieurs du plateau
 export const CORNER_DEFLECTOR_SIZE = 2;     // longueur d'arete coupee sur X et sur Z
 export const CORNER_DEFLECTOR_DEPTH = 0.25;
+
+// Arche — arrondi en haut du playfield (positionne via debug sur le GLB Obstacle-arch)
+export const ARCH_RADIUS     = TABLE_WIDTH / 2;
+export const ARCH_CENTER_Z   = -8.5;
+export const ARCH_HALF_WIDTH = 6.05;
+export const ARCH_HALF_DEPTH = 6.75;
+export const ARCH_HEIGHT     = 7.2;
+export const ARCH_SEGMENTS   = 10;
+export const ARCH_OFFSET_X   = 0;
+export const ARCH_OFFSET_Y   = -3.25;
+export const ARCH_OFFSET_Z   = 2;
+export const ARCH_ROT_Y      = 0;
 
 // Bumpers
 export const BUMPER_REPULSE_FORCE = 4;

@@ -21,9 +21,9 @@ export class LaunchGateActor extends PlayfieldActor {
     return new LaunchGateActor(body, mesh, ballActor);
   }
 
-  /** State machine update: checks ball position and triggers gate close. */
+  /** State machine update: checks ball Z and triggers gate close. */
   update(_dt) {
-    this.#gateBody.update(this.#ballActor.position);
+    this.#gateBody.update(this.#ballActor.position.z);
   }
 
   open() { this.#gateBody.open(); }

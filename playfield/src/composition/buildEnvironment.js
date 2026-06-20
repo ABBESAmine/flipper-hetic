@@ -66,12 +66,11 @@ export function buildEnvironment(world) {
     const ox = Math.random();
     const oy = Math.random();
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xffe600,
+      color: 0xccff00,
       metalness: 0.2,
       roughness: 1,
-      // Emissif ambre (non olive) : les murs restent lisibles de tranche dans la pénombre.
-      emissive: 0x3d1c00,
-      emissiveIntensity: 0.5,
+      emissive: 0xaaff00,
+      emissiveIntensity: 0.6,
       normalMap: loadRust("/textures/rust_normalGL.jpg", rx, ry, ox, oy),
       roughnessMap: loadRust("/textures/rust_roughness.jpg", rx, ry, ox, oy),
       aoMap: loadRust("/textures/rust_color.jpg", rx, ry, ox, oy),
