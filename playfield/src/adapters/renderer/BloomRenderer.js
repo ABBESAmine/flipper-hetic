@@ -42,7 +42,8 @@ class BloomRenderer {
   }
 
   onResize() {
-    this.#composer.setSize(window.innerWidth, window.innerHeight);
+    const canvas = this.#composer.renderer.domElement;
+    this.#composer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight);
   }
 }
 

@@ -40,15 +40,23 @@ class PlayfieldScene {
       antialias: RENDERER_ANTIALIAS,
       powerPreference: "high-performance",
     });
-    this.#renderer.setSize(window.innerWidth, window.innerHeight);
-    this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDERER_PIXEL_RATIO));
     this.#renderer.toneMapping = THREE.ReinhardToneMapping;
     this.#renderer.toneMappingExposure = 1.6;
     this.#renderer.shadowMap.enabled = true;
     this.#renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.style.margin = "0";
     document.body.style.overflow = "hidden";
-    document.body.appendChild(this.#renderer.domElement);
+
+    // Le canvas remplit TOUJOURS le viewport via CSS (comme l'app de reference
+    // qui tourne sur la cabine 9:16). Le buffer de rendu est ensuite derive de la
+    // taille REELLE du canvas (clientWidth/Height), pas de `window.innerWidth` qui
+    // peut etre errone sur le kiosk -> l'aspect du buffer colle a l'affichage,
+    // donc aucune deformation possible. `updateStyle=false` = on ne touche pas au CSS.
+    const canvas = this.#renderer.domElement;
+    canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;display:block";
+    document.body.appendChild(canvas);
+    this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDERER_PIXEL_RATIO));
+    this.#renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     // Environment map : reflexions douces sur les surfaces metalliques (murs, barils,
     // bille, triangles) -> rendu bien plus riche que des metaux mats/sombres.

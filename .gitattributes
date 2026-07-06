@@ -1,1 +1,5 @@
-*.glb filter=lfs diff=lfs merge=lfs -text
+# Les .glb sont commites en blobs git normaux (PAS en Git LFS) : le deploiement
+# de la cabine clone sans `git lfs pull`, donc un .glb en LFS y arrive sous forme
+# de pointeur texte et casse GLTFLoader. `binary` = pas de conversion de fins de
+# ligne, diff traite comme binaire.
+*.glb binary
