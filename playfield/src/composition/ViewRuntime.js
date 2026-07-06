@@ -76,15 +76,23 @@ export default class ViewRuntime {
     this.#shakeMag *= 0.82;
   };
 
+  // Taille REELLE affichee du canvas (fixee par le CSS 100vw/100vh), pas
+  // window.innerWidth qui peut mentir sur le kiosk -> l'aspect suit l'affichage.
+  #viewportSize() {
+    const c = this.#renderer.domElement;
+    return { w: c.clientWidth || window.innerWidth, h: c.clientHeight || window.innerHeight };
+  }
+
   onResize = () => {
+    const { w, h } = this.#viewportSize();
     if (this.params.cameraMode === 'perspective') {
-      this.#camera.aspect = window.innerWidth / window.innerHeight;
+      this.#camera.aspect = w / h;
       this.#camera.updateProjectionMatrix();
     } else {
       this.#updateOrthoBounds();
     }
     this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDERER_PIXEL_RATIO));
-    this.#renderer.setSize(window.innerWidth, window.innerHeight);
+    this.#renderer.setSize(w, h, false);
   };
 
   apply() {
@@ -147,7 +155,8 @@ export default class ViewRuntime {
 
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
-    const aspect = window.innerWidth / window.innerHeight;
+    const { w, h } = this.#viewportSize();
+    const aspect = w / h;
     const halfH = ((maxY - minY) / 2) * ORTHO_FRAME_MARGIN / p.orthoZoomY;
     const halfW = halfH * aspect;
 

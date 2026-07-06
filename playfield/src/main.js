@@ -77,10 +77,17 @@ wireCollisions(physicsWorld, level, collisionHandler);
 
 const viewRuntime = new ViewRuntime({ camera, renderer, scene, levelGroup: level.group, world: physicsWorld, dirLight });
 if (level.archMesh) level.group.attach(level.archMesh);
-window.addEventListener('resize', viewRuntime.onResize);
 
 const bloom = new BloomRenderer(renderer, scene, camera);
-window.addEventListener('resize', () => bloom.onResize());
+
+// Un seul point de resync taille : caméra + renderer + composer bloom. On écoute
+// l'event window 'resize' MAIS aussi un ResizeObserver sur le canvas — les kiosks
+// (et changements d'orientation/DPI) ne déclenchent pas toujours 'resize'. Un
+// appel initial garantit un aspect correct dès le premier rendu.
+const onViewportResize = () => { viewRuntime.onResize(); bloom.onResize(); };
+window.addEventListener('resize', onViewportResize);
+new ResizeObserver(onViewportResize).observe(renderer.domElement);
+onViewportResize();
 
 // Bandeau "hors ligne" NON bloquant : un petit ruban en haut de l'ecran plutot
 // qu'un voile noir plein ecran. Le playfield reste visible et jouable meme si le
