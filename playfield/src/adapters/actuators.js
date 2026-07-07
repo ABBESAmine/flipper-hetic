@@ -4,10 +4,6 @@ export function createActuators(audio = null) {
       audio?.playRandom(["bumper-1", "bumper-2", "bumper-3"]);
     },
 
-    onSlingshotHit() {
-      audio?.playRandom(["flipper-1", "flipper-2", "flipper-3"]);
-    },
-
     onFlipperFire() {
       audio?.playRandom(["flipper-1", "flipper-2", "flipper-3"]);
     },
