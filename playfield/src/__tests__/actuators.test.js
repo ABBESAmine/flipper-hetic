@@ -9,7 +9,6 @@ describe("createActuators", () => {
   it("1 — expose les methodes attendues", () => {
     const a = createActuators();
     expect(typeof a.onBumperHit).toBe("function");
-    expect(typeof a.onSlingshotHit).toBe("function");
     expect(typeof a.onFlipperFire).toBe("function");
     expect(typeof a.onBallLost).toBe("function");
     expect(typeof a.onGameOver).toBe("function");
@@ -21,7 +20,6 @@ describe("createActuators", () => {
     const a = createActuators();
     expect(() => {
       a.onBumperHit();
-      a.onSlingshotHit();
       a.onFlipperFire("left");
       a.onBallLost();
       a.onGameOver();

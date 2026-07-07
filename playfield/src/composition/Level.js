@@ -5,7 +5,6 @@ import ModelLoader from '../adapters/renderer/modelLoader.js';
 import { BallActor }        from '../actors/BallActor.js';
 import { FlipperActor }     from '../actors/FlipperActor.js';
 import { LaunchGateActor }  from '../actors/LaunchGateActor.js';
-import { SlingshotActor }   from '../actors/SlingshotActor.js';
 import {
   DRAIN_Z_THRESHOLD,
   DRAIN_OPENING_WIDTH,
@@ -30,7 +29,6 @@ export default class Level {
   ballActor        = null;
   flipperActor     = null;
   launchGateActor  = null;
-  slingshotActor   = null;
 
   /** Ordered list of all actors iterated by GameLoop. */
   actors = [];
@@ -90,8 +88,6 @@ export default class Level {
     const ballActor       = new BallActor(this.#physicsWorld, this.#scene);
     const flipperActor    = await FlipperActor.create(this.#physicsWorld, this.#scene);
     const launchGateActor = LaunchGateActor.create(this.#physicsWorld, this.#scene, ballActor);
-    const slingshotActor  = new SlingshotActor(this.#physicsWorld);
-
     // --- Debug meshes ---
     const drainMesh = new Mesh(
       new BoxGeometry(DRAIN_OPENING_WIDTH, 0.6, 0.5),
@@ -148,7 +144,7 @@ export default class Level {
     levelGroup.name = 'playfield-level';
     this.#scene.add(levelGroup);
 
-    const actors = [ballActor, flipperActor, launchGateActor, slingshotActor];
+    const actors = [ballActor, flipperActor, launchGateActor];
     for (const actor of actors) {
       for (const mesh of actor.meshes) {
         if (mesh.parent) mesh.parent.remove(mesh);
@@ -161,7 +157,6 @@ export default class Level {
     this.ballActor       = ballActor;
     this.flipperActor    = flipperActor;
     this.launchGateActor = launchGateActor;
-    this.slingshotActor  = slingshotActor;
     this.actors          = actors;
     this.extrasGroup     = extrasGroup;
     this.slingshotGroup  = slingshotGroup;
